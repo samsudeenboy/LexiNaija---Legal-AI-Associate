@@ -1,5 +1,5 @@
 import React from 'react';
-import { Scale, BookOpen, PenTool, LayoutDashboard, ShieldCheck, Users, Briefcase, CreditCard, FileText, Calendar, ShieldAlert, Settings, Calculator, Library, List, BrainCircuit, Archive, UserCheck, Feather, Building2, BarChart3 } from 'lucide-react';
+import { Scale, BookOpen, PenTool, LayoutDashboard, ShieldCheck, Users, Briefcase, CreditCard, FileText, Calendar, ShieldAlert, Settings, Calculator, Library, List, BrainCircuit, Archive, UserCheck, Feather, Building2, BarChart3, Gavel, Truck } from 'lucide-react';
 import { AppView } from '../types';
 
 interface SidebarProps {
@@ -14,6 +14,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
     { id: AppView.DOCKET, label: 'Court Diary & Tasks', icon: Calendar },
     { id: AppView.CASES, label: 'Case Files', icon: Briefcase },
     { id: AppView.EVIDENCE, label: 'Evidence & Exhibits', icon: Archive },
+    { id: AppView.BAILIFF, label: 'Bailiff Tracker', icon: Truck },
     { id: AppView.CLIENTS, label: 'Client Directory', icon: Users },
     { id: AppView.BILLING, label: 'Billing & Fees', icon: CreditCard },
   ];
@@ -29,6 +30,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
     { id: AppView.DRAFTER, label: 'Smart Drafter', icon: PenTool },
     { id: AppView.RESEARCH, label: 'Legal Research', icon: Scale },
     { id: AppView.SUMMARIZER, label: 'Case Analyzer', icon: BookOpen },
+    { id: AppView.CASE_LAW, label: 'Case Law DB', icon: Gavel },
     { id: AppView.CALCULATORS, label: 'Legal Calculators', icon: Calculator },
     { id: AppView.CONFLICT_CHECK, label: 'Conflict Check', icon: ShieldAlert },
     { id: AppView.SETTINGS, label: 'Firm Settings', icon: Settings },
