@@ -1,3 +1,4 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Client, Case, Invoice, SavedDocument, DocumentVersion, BillableItem, Task, FirmProfile, EvidenceItem, LegalAnalytics, AuditLogEntry } from '../types';
 
 interface LegalStoreContextType {
