@@ -20,7 +20,9 @@ export enum AppView {
   CORPORATE = 'CORPORATE',
   ANALYTICS = 'ANALYTICS',
   CASE_LAW = 'CASE_LAW',
-  BAILIFF = 'BAILIFF'
+  BAILIFF = 'BAILIFF',
+  AUDIT = 'AUDIT',
+  PORTAL = 'PORTAL'
 }
 
 export interface ChatMessage {

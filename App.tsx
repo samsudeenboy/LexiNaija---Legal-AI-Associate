@@ -22,6 +22,8 @@ const Corporate = lazy(() => import('./components/Corporate').then(m => ({ defau
 const Analytics = lazy(() => import('./components/Analytics').then(m => ({ default: m.Analytics })));
 const CaseLawDatabase = lazy(() => import('./components/CaseLawDatabase').then(m => ({ default: m.CaseLawDatabase })));
 const BailiffTracker = lazy(() => import('./components/BailiffTracker').then(m => ({ default: m.BailiffTracker })));
+const ComplianceAudit = lazy(() => import('./components/ComplianceAudit').then(m => ({ default: m.ComplianceAudit })));
+const ClientPortal = lazy(() => import('./components/ClientPortal').then(m => ({ default: m.ClientPortal })));
 import { AppView } from './types';
 import { LegalStoreProvider } from './contexts/LegalStoreContext';
 
@@ -74,6 +76,10 @@ function App() {
         return <CaseLawDatabase />;
       case AppView.BAILIFF:
         return <BailiffTracker />;
+      case AppView.AUDIT:
+        return <ComplianceAudit />;
+      case AppView.PORTAL:
+        return <ClientPortal />;
       default:
         return <Dashboard onNavigate={setCurrentView} />;
     }
