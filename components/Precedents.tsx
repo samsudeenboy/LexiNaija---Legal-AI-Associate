@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { BookOpen, FileText, ChevronRight, Copy, Search, Scale, Briefcase, Building2, Shield, Feather, Gavel, FileSignature } from 'lucide-react';
+import { BookOpen, FileText, ChevronRight, Copy, Search, Scale, Briefcase, Building2, Shield, Feather, Gavel, FileSignature, Bookmark, Star, Clock } from 'lucide-react';
 import { useLegalStore } from '../contexts/LegalStoreContext';
-import { AppView } from '../types';
+import { AppView, SavedDocument } from '../types';
 
 interface PrecedentsProps {
   onNavigate: (view: AppView) => void;
@@ -15,6 +15,7 @@ interface Template {
   content: string;
   jurisdiction?: string;
   court?: string;
+  isFavorite?: boolean;
 }
 
 const TEMPLATES: Template[] = [
@@ -1428,7 +1429,7 @@ __________________________
 3. The Claimant is owed salaries of N[AMOUNT].
 
 RELIEFS: As per Complaint.`
-  }, // Closing bracket for nicn3 template
+  },
   {
     id: 'lit17',
     category: 'Civil Litigation',
@@ -2270,6 +2271,8 @@ export const Precedents: React.FC<PrecedentsProps> = ({ onNavigate }) => {
   const [useTitle, setUseTitle] = useState('');
   const [selectedJurisdiction, setSelectedJurisdiction] = useState<string>('All');
   const [selectedCourt, setSelectedCourt] = useState<string>('All');
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'library' | 'favorites' | 'recent'>('library');
 
   const categories = ['All', ...Array.from(new Set(TEMPLATES.map(t => t.category)))];
   const jurisdictions = ['All', ...Array.from(new Set(TEMPLATES.map(t => t.jurisdiction).filter(Boolean))) as string[]];
@@ -2281,7 +2284,8 @@ export const Precedents: React.FC<PrecedentsProps> = ({ onNavigate }) => {
                          t.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesJurisdiction = (selectedJurisdiction === 'All') || (t.jurisdiction === selectedJurisdiction);
     const matchesCourt = (selectedCourt === 'All') || (t.court === selectedCourt);
-    return matchesCategory && matchesSearch && matchesJurisdiction && matchesCourt;
+    const matchesTab = activeTab === 'library' || (activeTab === 'favorites' && favorites.includes(t.id));
+    return matchesCategory && matchesSearch && matchesJurisdiction && matchesCourt && matchesTab;
   });
 
   const handleCopy = () => {
@@ -2313,19 +2317,41 @@ export const Precedents: React.FC<PrecedentsProps> = ({ onNavigate }) => {
     onNavigate(AppView.EDITOR);
   };
 
+  const toggleFavorite = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    setFavorites(prev => 
+      prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]
+    );
+  };
+
   return (
     <div className="p-8 max-w-7xl mx-auto h-screen flex flex-col">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-8 shrink-0">
         <div>
           <h2 className="text-3xl font-serif font-bold text-legal-900">Precedents Library</h2>
           <p className="text-gray-600 mt-2">Professional legal templates and court forms.</p>
         </div>
       </div>
 
+      <div className="flex gap-6 mb-6 shrink-0 overflow-x-auto pb-2">
+        <button 
+          onClick={() => setActiveTab('library')}
+          className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all whitespace-nowrap ${activeTab === 'library' ? 'bg-legal-900 text-white shadow-lg' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'}`}
+        >
+          <BookOpen size={18} /> Full Library
+        </button>
+        <button 
+          onClick={() => setActiveTab('favorites')}
+          className={`px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-all whitespace-nowrap ${activeTab === 'favorites' ? 'bg-legal-900 text-white shadow-lg' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'}`}
+        >
+          <Star size={18} fill={activeTab === 'favorites' ? "currentColor" : "none"} /> Favorites
+        </button>
+      </div>
+
       <div className="flex gap-6 flex-1 overflow-hidden">
-        {/* Sidebar Categories */}
-        <div className="w-64 flex-shrink-0 bg-white rounded-lg shadow-sm border border-gray-200 p-4 h-fit">
-          <h3 className="font-semibold text-gray-700 mb-4 px-2">Categories</h3>
+        {/* Sidebar Filters */}
+        <div className="w-64 flex-shrink-0 bg-white rounded-xl shadow-sm border border-gray-200 p-6 h-fit overflow-y-auto max-h-full">
+          <h3 className="font-bold text-legal-900 mb-4 px-2 uppercase tracking-widest text-[10px]">Filter by Category</h3>
           <div className="space-y-1">
             {categories.map(cat => (
               <button
@@ -2333,7 +2359,7 @@ export const Precedents: React.FC<PrecedentsProps> = ({ onNavigate }) => {
                 onClick={() => setSelectedCategory(cat)}
                 className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
                   selectedCategory === cat 
-                    ? 'bg-legal-50 text-legal-900 font-medium' 
+                    ? 'bg-legal-50 text-legal-900 font-bold border-l-4 border-legal-gold' 
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
@@ -2341,164 +2367,184 @@ export const Precedents: React.FC<PrecedentsProps> = ({ onNavigate }) => {
               </button>
             ))}
           </div>
-          <div className="mt-6 space-y-2">
-            <label className="block text-xs font-semibold text-gray-500 px-2">Jurisdiction</label>
-            <select
-              className="w-full border border-gray-300 p-2 rounded"
-              value={selectedJurisdiction}
-              onChange={e => setSelectedJurisdiction(e.target.value)}
-            >
-              {jurisdictions.map(j => <option key={j} value={j}>{j}</option>)}
-            </select>
-            <label className="block text-xs font-semibold text-gray-500 px-2 mt-2">Court</label>
-            <select
-              className="w-full border border-gray-300 p-2 rounded"
-              value={selectedCourt}
-              onChange={e => setSelectedCourt(e.target.value)}
-            >
-              {courts.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+          <div className="mt-8 space-y-4">
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 px-2 uppercase mb-2 tracking-widest">Jurisdiction</label>
+              <select
+                className="w-full border border-gray-200 p-2.5 rounded-lg text-sm outline-none focus:ring-2 focus:ring-legal-gold"
+                value={selectedJurisdiction}
+                onChange={e => setSelectedJurisdiction(e.target.value)}
+              >
+                {jurisdictions.map(j => <option key={j} value={j}>{j}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold text-gray-400 px-2 uppercase mb-2 tracking-widest">Court Level</label>
+              <select
+                className="w-full border border-gray-200 p-2.5 rounded-lg text-sm outline-none focus:ring-2 focus:ring-legal-gold"
+                value={selectedCourt}
+                onChange={e => setSelectedCourt(e.target.value)}
+              >
+                {courts.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* Main Content */}
+        {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Search */}
-          <div className="mb-6 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+          {/* Search Bar */}
+          <div className="mb-6 relative shrink-0">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search templates..."
+              placeholder="Search by title, clause, or keywords..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-legal-gold focus:border-transparent"
+              className="w-full pl-12 pr-4 py-4 bg-white border border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-legal-gold outline-none text-lg"
             />
           </div>
 
           {!viewingTemplate ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto pr-2 pb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 overflow-y-auto pr-2 pb-8">
               {filteredTemplates.length === 0 && (
-                <div className="col-span-2 text-center text-sm text-gray-500 py-12">
-                  No templates match your filters. Try another category or search term.
+                <div className="col-span-2 text-center text-gray-400 py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                  <Bookmark className="w-12 h-12 mx-auto mb-4 opacity-10" />
+                  <h4 className="text-lg font-bold">No precedents found</h4>
+                  <p className="text-sm">Try adjusting your filters or search terms.</p>
                 </div>
               )}
               {filteredTemplates.map(template => (
                 <div 
                   key={template.id}
                   onClick={() => setViewingTemplate(template)}
-                  className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 hover:border-legal-gold cursor-pointer transition-all hover:shadow-md group"
+                  className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200 hover:border-legal-gold cursor-pointer transition-all hover:shadow-xl group relative overflow-hidden"
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full font-medium">
+                  <div className="absolute top-0 right-0 w-24 h-24 bg-legal-gold opacity-[0.03] rounded-bl-full translate-x-8 -translate-y-8"></div>
+                  
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="px-3 py-1 bg-gray-100 text-gray-700 text-[10px] font-black uppercase tracking-wider rounded-full">
                       {template.category}
                     </span>
-                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-legal-gold" />
+                    <button 
+                      onClick={(e) => toggleFavorite(e, template.id)}
+                      className={`p-1.5 rounded-lg transition-colors ${favorites.includes(template.id) ? 'text-legal-gold bg-yellow-50' : 'text-gray-300 hover:text-legal-gold hover:bg-gray-50'}`}
+                    >
+                      <Star size={18} fill={favorites.includes(template.id) ? "currentColor" : "none"} />
+                    </button>
                   </div>
-                  <h3 className="font-serif font-bold text-legal-900 mb-2">{template.title}</h3>
-                  <p className="text-sm text-gray-500 line-clamp-2">{template.description}</p>
-                  {(template.jurisdiction || template.court) && (
-                    <div className="mt-3 flex gap-2">
-                      {template.jurisdiction && (
-                        <span className="px-2 py-0.5 text-xs bg-legal-50 text-legal-800 border border-legal-200 rounded">{template.jurisdiction}</span>
-                      )}
-                      {template.court && (
-                        <span className="px-2 py-0.5 text-xs bg-gray-50 text-gray-700 border border-gray-200 rounded">{template.court}</span>
-                      )}
-                    </div>
-                  )}
+                  
+                  <h3 className="font-serif font-bold text-legal-900 text-xl mb-2 group-hover:text-legal-gold transition-colors">{template.title}</h3>
+                  <p className="text-gray-500 text-sm leading-relaxed line-clamp-2 mb-4">{template.description}</p>
+                  
+                  <div className="flex flex-wrap gap-2 mt-auto">
+                    {template.jurisdiction && (
+                      <span className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold bg-legal-50 text-legal-800 border border-legal-100 rounded-lg uppercase tracking-tight">
+                        <Scale size={10} /> {template.jurisdiction}
+                      </span>
+                    )}
+                    {template.court && (
+                      <span className="flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold bg-gray-50 text-gray-600 border border-gray-200 rounded-lg uppercase tracking-tight">
+                        <Gavel size={10} /> {template.court}
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 flex-1 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-              <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-                <div>
+            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 flex-1 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+              <div className="p-6 border-b border-gray-200 bg-gray-50 flex justify-between items-center shrink-0">
+                <div className="flex items-center gap-4">
                   <button 
                     onClick={() => setViewingTemplate(null)}
-                    className="text-sm text-gray-500 hover:text-legal-900 mb-1 hover:underline"
+                    className="p-2 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-legal-900 transition-colors shadow-sm"
                   >
-                    ← Back to Library
+                    <ChevronRight className="rotate-180" size={20} />
                   </button>
-                  <h3 className="font-serif font-bold text-legal-900">{viewingTemplate.title}</h3>
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-legal-gold">{viewingTemplate.category}</span>
+                      <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{viewingTemplate.jurisdiction || 'Federal'}</span>
+                    </div>
+                    <h3 className="font-serif font-bold text-legal-900 text-2xl">{viewingTemplate.title}</h3>
+                  </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <button
                     onClick={handleCopy}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-300 rounded text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all shadow-sm"
                   >
-                    {copied ? <Shield className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
-                    {copied ? 'Copied' : 'Copy Text'}
+                    {copied ? <CheckCircle2 className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                    {copied ? 'Copied' : 'Copy Plain Text'}
                   </button>
                   <button
                     onClick={handleUseTemplate}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-legal-900 text-white rounded text-sm font-medium hover:bg-legal-800"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-legal-900 text-white rounded-xl text-sm font-black hover:bg-legal-800 transition-all shadow-lg shadow-legal-900/20"
                   >
-                    <FileSignature className="w-4 h-4" />
-                    Use in Editor
+                    <FileSignature className="w-5 h-5 text-legal-gold" />
+                    Open in Editor
                   </button>
                 </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-8 bg-gray-50">
-                <div className="max-w-3xl mx-auto bg-white p-12 shadow-sm min-h-full">
-                  {(viewingTemplate.jurisdiction || viewingTemplate.court) && (
-                    <div className="mb-4 flex gap-2">
-                      {viewingTemplate.jurisdiction && (
-                        <span className="px-2 py-0.5 text-xs bg-legal-50 text-legal-800 border border-legal-200 rounded">{viewingTemplate.jurisdiction}</span>
-                      )}
-                      {viewingTemplate.court && (
-                        <span className="px-2 py-0.5 text-xs bg-gray-50 text-gray-700 border border-gray-200 rounded">{viewingTemplate.court}</span>
-                      )}
-                    </div>
-                  )}
-                  <pre className="whitespace-pre-wrap font-mono text-sm text-gray-800 leading-relaxed">
-                    {viewingTemplate.content}
-                  </pre>
+              
+              <div className="flex-1 overflow-y-auto p-12 bg-slate-100/50">
+                <div className="max-w-4xl mx-auto bg-white p-16 shadow-2xl rounded-sm min-h-full border border-gray-100 ring-1 ring-gray-200">
+                  <div className="prose prose-sm max-w-none prose-headings:font-serif prose-headings:text-legal-900">
+                    <pre className="whitespace-pre-wrap font-mono text-sm text-gray-800 leading-relaxed bg-transparent border-none p-0 select-all">
+                      {viewingTemplate.content}
+                    </pre>
+                  </div>
                 </div>
               </div>
             </div>
           )}
         </div>
       </div>
+      
       {showUseModal && viewingTemplate && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg text-legal-900">Use in Document Editor</h3>
-              <button onClick={() => setShowUseModal(false)} className="text-gray-400 hover:text-gray-600">✕</button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl p-8 w-full max-w-md shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-bold text-2xl text-legal-900 font-serif">Create Document</h3>
+              <button onClick={() => setShowUseModal(false)} className="p-2 text-gray-400 hover:text-gray-600 transition-colors bg-gray-50 rounded-full">
+                <X size={20} />
+              </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Matter</label>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Select Active Matter</label>
                 <select 
-                  className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-legal-gold outline-none"
+                  className="w-full border border-gray-200 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-legal-gold bg-gray-50 text-legal-900 font-bold"
                   value={useCaseId}
                   onChange={e => setUseCaseId(e.target.value)}
                 >
-                  <option value="">-- Choose Case --</option>
+                  <option value="">-- Choose Case File --</option>
                   {cases.map(c => (
                     <option key={c.id} value={c.id}>{c.title}</option>
                   ))}
                 </select>
-                {cases.length === 0 && <p className="text-xs text-red-500 mt-1">No active cases found. Create a case first.</p>}
+                {cases.length === 0 && <p className="text-xs text-red-500 mt-2 font-medium">! No active cases found. Create a case first.</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Document Title</label>
+                <label className="block text-xs font-black text-gray-400 uppercase tracking-widest mb-2">Draft Title</label>
                 <input 
                   type="text"
-                  className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-legal-gold outline-none"
+                  className="w-full border border-gray-200 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-legal-gold bg-gray-50 text-legal-900 font-bold"
                   value={useTitle}
                   onChange={e => setUseTitle(e.target.value)}
                   placeholder={`e.g. ${viewingTemplate.title} - Draft 1`}
                 />
               </div>
-              <div className="flex gap-3 pt-2">
-                <button onClick={() => setShowUseModal(false)} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-300 rounded-lg hover:bg-gray-100">Cancel</button>
+              <div className="flex gap-4 pt-2">
+                <button onClick={() => setShowUseModal(false)} className="flex-1 px-4 py-4 text-sm font-bold text-gray-500 bg-white border border-gray-200 rounded-2xl hover:bg-gray-50 transition-colors">Cancel</button>
                 <button 
                   onClick={confirmUseTemplate}
                   disabled={!useCaseId || !useTitle}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-white bg-legal-900 rounded-lg hover:bg-legal-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-4 text-sm font-black text-white bg-legal-900 rounded-2xl hover:bg-legal-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-legal-900/20"
                 >
-                  Use Template
+                  Import Template
                 </button>
               </div>
             </div>
@@ -2508,3 +2554,7 @@ export const Precedents: React.FC<PrecedentsProps> = ({ onNavigate }) => {
     </div>
   );
 };
+
+const X = ({ size }: { size: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+);
