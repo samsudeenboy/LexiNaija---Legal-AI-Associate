@@ -186,3 +186,15 @@ export interface AuditLogEntry {
   details?: string;
 }
 
+export interface Suggestion {
+  id: string;
+  type: 'action' | 'missing_evidence' | 'deadline' | 'insight';
+  title: string;
+  description: string;
+  actionLabel: string;
+  targetView: AppView;
+  targetState?: any;
+  priority: 'High' | 'Medium' | 'Low';
+  timestamp: Date;
+}
+

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Client, Case, Invoice, SavedDocument, DocumentVersion, BillableItem, Task, FirmProfile, EvidenceItem, LegalAnalytics, AuditLogEntry } from '../types';
+import { Client, Case, Invoice, SavedDocument, DocumentVersion, BillableItem, Task, FirmProfile, EvidenceItem, LegalAnalytics, AuditLogEntry, Suggestion, AppView } from '../types';
 
 interface LegalStoreContextType {
   firmProfile: FirmProfile;
@@ -32,6 +32,10 @@ interface LegalStoreContextType {
   getAnalytics: () => LegalAnalytics;
   auditLog: AuditLogEntry[];
   addAuditLogEntry: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
+  suggestions: Suggestion[];
+  activeCaseId: string | null;
+  setActiveCaseId: (id: string | null) => void;
+  dismissSuggestion: (id: string) => void;
 }
 
 const LegalStoreContext = createContext<LegalStoreContextType | undefined>(undefined);
@@ -169,6 +173,114 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       return saved ? JSON.parse(saved, dateReviver) : DEFAULT_AUDIT_LOG;
     } catch (e) { return DEFAULT_AUDIT_LOG; }
   });
+
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
+
+  // Agentic Audit Engine
+  useEffect(() => {
+    if (activeCaseId) {
+        runAgenticAudit(activeCaseId);
+    } else {
+        setSuggestions([]);
+    }
+  }, [activeCaseId, cases]);
+
+  const runAgenticAudit = (caseId: string) => {
+    const activeCase = cases.find(c => c.id === caseId);
+    if (!activeCase) return;
+
+    const newSuggestions: Suggestion[] = [];
+    
+    // 1. Evidence Gap Detection
+    const titleLower = activeCase.title.toLowerCase();
+    const evidenceTypes = (activeCase.evidence || []).map(e => e.type);
+    const evidenceDesc = (activeCase.evidence || []).map(e => e.description.toLowerCase());
+
+    if (titleLower.includes('tenancy') || titleLower.includes('possession')) {
+        const hasNotice = evidenceDesc.some(d => d.includes('notice to quit') || d.includes('7 days notice'));
+        if (!hasNotice) {
+            newSuggestions.push({
+                id: 'suggest_notice_quit',
+                type: 'missing_evidence',
+                title: 'Missing Statutory Notice',
+                description: 'This is a tenancy recovery matter, but no "Notice to Quit" has been logged in the evidence locker.',
+                actionLabel: 'Draft Notice',
+                targetView: AppView.DRAFTER,
+                priority: 'High',
+                timestamp: new Date()
+            });
+        }
+    }
+
+    // 2. Deadline Awareness
+    if (activeCase.nextHearing) {
+        const hearingDate = new Date(activeCase.nextHearing);
+        const diffDays = Math.ceil((hearingDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays > 0 && diffDays <= 7) {
+            newSuggestions.push({
+                id: 'suggest_hearing_prep',
+                type: 'deadline',
+                title: 'Upcoming Hearing',
+                description: `Matter is set for hearing in ${diffDays} days. Shall I draft the Trial Brief and Witness Statements?`,
+                actionLabel: 'Prepare Brief',
+                targetView: AppView.BRIEFS,
+                priority: 'High',
+                timestamp: new Date()
+            });
+        }
+    }
+
+    // 3. Workflow Chaining (If Briefs are empty)
+    if (activeCase.documents.length > 0 && !activeCase.documents.some(d => d.title.includes('Argument'))) {
+        newSuggestions.push({
+            id: 'suggest_brief_draft',
+            type: 'action',
+            title: 'Draft Advocacy Address',
+            description: 'You have case facts and research stored. Shall I synthesize them into a Written Address?',
+            actionLabel: 'Draft Now',
+            targetView: AppView.BRIEFS,
+            priority: 'Medium',
+            timestamp: new Date()
+        });
+    }
+
+    // 4. Billing Proactivity
+    if (activeCase.status === 'Open' && (!activeCase.billableItems || activeCase.billableItems.length === 0)) {
+        newSuggestions.push({
+            id: 'suggest_billing_setup',
+            type: 'insight',
+            title: 'Unbilled Professional Matter',
+            description: 'This matter is active but no professional fees have been logged. Configure your fee note structure.',
+            actionLabel: 'Setup Billing',
+            targetView: AppView.BILLING,
+            priority: 'Medium',
+            timestamp: new Date()
+        });
+    }
+
+    // 5. Conflict of Interest Check (New Cases)
+    const createdAt = new Date(activeCase.id === '101' ? '2024-01-01' : parseInt(activeCase.id)); // Fallback for demo IDs
+    const ageHours = (new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60);
+    if (ageHours < 24) {
+        newSuggestions.push({
+            id: 'suggest_conflict_check',
+            type: 'action',
+            title: 'Conflict of Interest Sweep',
+            description: 'New matter file detected. Perform a conflict check against current adverse parties database.',
+            actionLabel: 'Run Check',
+            targetView: AppView.CONFLICT_CHECK,
+            priority: 'High',
+            timestamp: new Date()
+        });
+    }
+
+    setSuggestions(newSuggestions);
+  };
+
+  const dismissSuggestion = (id: string) => {
+    setSuggestions(prev => prev.filter(s => s.id !== id));
+  };
 
   // Persist State Changes
   useEffect(() => {
@@ -427,7 +539,8 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       addCase, updateCase, deleteCase, addInvoice, 
       saveDocumentToCase, updateCaseDocument, addBillableItem, 
       addTask, updateTask, deleteTask, addEvidence, deleteEvidence, setActiveDoc, getAnalytics,
-      auditLog, addAuditLogEntry
+      auditLog, addAuditLogEntry,
+      suggestions, activeCaseId, setActiveCaseId, dismissSuggestion
     }}>
       {children}
     </LegalStoreContext.Provider>

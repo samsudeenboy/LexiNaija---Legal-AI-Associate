@@ -1,6 +1,6 @@
-import React from 'react';
 import { Scale, BookOpen, PenTool, LayoutDashboard, ShieldCheck, Users, Briefcase, CreditCard, FileText, Calendar, ShieldAlert, Settings, Calculator, Library, List, BrainCircuit, Archive, UserCheck, Feather, Building2, BarChart3, Gavel, Truck, Share2 } from 'lucide-react';
 import { AppView } from '../types';
+import { useLegalStore } from '../contexts/LegalStoreContext';
 
 interface SidebarProps {
   currentView: AppView;
@@ -8,8 +8,9 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
+  const { suggestions } = useLegalStore();
   const practiceItems = [
-    { id: AppView.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard },
+    { id: AppView.DASHBOARD, label: 'Dashboard', icon: LayoutDashboard, badge: suggestions.length > 0 ? suggestions.length : undefined },
     { id: AppView.ANALYTICS, label: 'Analytics', icon: BarChart3 },
     { id: AppView.DOCKET, label: 'Court Diary & Tasks', icon: Calendar },
     { id: AppView.CASES, label: 'Case Files', icon: Briefcase },
@@ -67,7 +68,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
                   }`}
                 >
                   <Icon className={`w-4 h-4 ${isActive ? 'text-legal-gold' : ''}`} />
-                  <span className="font-medium text-sm">{item.label}</span>
+                  <span className="font-medium text-sm flex-1">{item.label}</span>
+                  {item.badge && (
+                    <span className="bg-legal-gold text-legal-900 text-[10px] font-black px-2 py-0.5 rounded-full">
+                        {item.badge}
+                    </span>
+                  )}
                 </button>
               </li>
             );

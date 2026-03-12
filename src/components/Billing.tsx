@@ -4,8 +4,10 @@ import { useLegalStore } from '../contexts/LegalStoreContext';
 import { generateFeeNoteDescription } from '../services/geminiService';
 import { jsPDF } from 'jspdf';
 import { Invoice } from '../types';
+import { useToast } from '../contexts/ToastContext';
 
 export const Billing: React.FC = () => {
+  const { showToast } = useToast();
   const { clients, cases, invoices, addInvoice, firmProfile, consumeCredits } = useLegalStore();
   const [drafting, setDrafting] = useState(false);
   const [loadingAi, setLoadingAi] = useState(false);
@@ -21,7 +23,7 @@ export const Billing: React.FC = () => {
   const handleAiRefine = async () => {
     if (!newInvoice.rawDescription) return;
     if (!consumeCredits(1)) {
-      alert("Insufficient credits to use AI refine. Please top up your account.");
+      showToast("Insufficient Intelligence Credits.", "error");
       return;
     }
     setLoadingAi(true);

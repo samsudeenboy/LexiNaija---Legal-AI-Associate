@@ -27,6 +27,7 @@ const ComplianceAudit = lazy(() => import('./components/ComplianceAudit').then(m
 const ClientPortal = lazy(() => import('./components/ClientPortal').then(m => ({ default: m.ClientPortal })));
 import { AppView } from './types';
 import { LegalStoreProvider } from './contexts/LegalStoreContext';
+import { ToastProvider } from './contexts/ToastContext';
 
 function App() {
   const [currentView, setCurrentView] = useState<AppView>(AppView.LANDING);
@@ -90,14 +91,16 @@ function App() {
 
   return (
     <LegalStoreProvider>
-      <div className="flex h-screen w-full bg-slate-50 font-sans text-slate-900">
-        {currentView !== AppView.LANDING && <Sidebar currentView={currentView} setView={setCurrentView} />}
-        <main className={`flex-1 ${currentView !== AppView.LANDING ? 'ml-64' : ''} overflow-auto scrollbar-hide ${currentView === AppView.EDITOR || currentView === AppView.DOCKET || currentView === AppView.EVIDENCE || currentView === AppView.WITNESS || currentView === AppView.BRIEFS || currentView === AppView.CORPORATE ? 'bg-white' : ''}`}>
-          <Suspense fallback={<div className="p-6 text-sm text-gray-600">Loading…</div>}>
-            {renderView()}
-          </Suspense>
-        </main>
-      </div>
+      <ToastProvider>
+        <div className="flex h-screen w-full bg-slate-50 font-sans text-slate-900">
+          {currentView !== AppView.LANDING && <Sidebar currentView={currentView} setView={setCurrentView} />}
+          <main className={`flex-1 ${currentView !== AppView.LANDING ? 'ml-64' : ''} overflow-auto scrollbar-hide ${currentView === AppView.EDITOR || currentView === AppView.DOCKET || currentView === AppView.EVIDENCE || currentView === AppView.WITNESS || currentView === AppView.BRIEFS || currentView === AppView.CORPORATE ? 'bg-white' : ''}`}>
+            <Suspense fallback={<div className="p-6 text-sm text-gray-600">Loading…</div>}>
+              {renderView()}
+            </Suspense>
+          </main>
+        </div>
+      </ToastProvider>
     </LegalStoreProvider>
   );
 }

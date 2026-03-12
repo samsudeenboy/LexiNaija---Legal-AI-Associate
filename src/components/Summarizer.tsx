@@ -3,8 +3,10 @@ import { UploadCloud, BookOpen, ChevronRight, AlertTriangle, Save } from 'lucide
 import { summarizeCaseText } from '../services/geminiService';
 import { CaseSummary } from '../types';
 import { useLegalStore } from '../contexts/LegalStoreContext';
+import { useToast } from '../contexts/ToastContext';
 
 export const Summarizer: React.FC = () => {
+  const { showToast } = useToast();
   const { cases, saveDocumentToCase, consumeCredits } = useLegalStore();
   const [text, setText] = useState('');
   const [summary, setSummary] = useState<CaseSummary | null>(null);
@@ -15,7 +17,7 @@ export const Summarizer: React.FC = () => {
   const handleAnalyze = async () => {
     if (!text.trim()) return;
     if (!consumeCredits(3)) {
-      alert("Insufficient credits for analysis. Please top up your account.");
+      showToast("Insufficient Intelligence Credits.", "error");
       return;
     }
     setIsLoading(true);
@@ -24,7 +26,7 @@ export const Summarizer: React.FC = () => {
       const result = await summarizeCaseText(text);
       setSummary(result);
     } catch (error) {
-      alert("Could not analyze text. Ensure it is a valid legal text.");
+      showToast("Analysis protocol failure.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -40,7 +42,7 @@ export const Summarizer: React.FC = () => {
             createdAt: new Date()
         });
         setShowSaveModal(false);
-        alert("Saved to Case File successfully!");
+        showToast("Analysis archived to matter file.", "success");
     }
   };
 
