@@ -1,4 +1,4 @@
-import { Scale, BookOpen, PenTool, LayoutDashboard, ShieldCheck, Users, Briefcase, CreditCard, FileText, Calendar, ShieldAlert, Settings, Calculator, Library, List, BrainCircuit, Archive, UserCheck, Feather, Building2, BarChart3, Gavel, Truck, Share2 } from 'lucide-react';
+import { Scale, BookOpen, PenTool, LayoutDashboard, ShieldCheck, Users, Briefcase, CreditCard, FileText, Calendar, ShieldAlert, Settings, Calculator, Library, List, BrainCircuit, Archive, UserCheck, Feather, Building2, BarChart3, Gavel, Truck, Share2, Music } from 'lucide-react';
 import { AppView } from '../types';
 import { useLegalStore } from '../contexts/LegalStoreContext';
 
@@ -26,6 +26,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, setView }) => {
     { id: AppView.BRIEFS, label: 'Smart Briefs', icon: Feather },
     { id: AppView.WITNESS, label: 'Witness Companion', icon: UserCheck },
     { id: AppView.CORPORATE, label: 'Corporate Assistant', icon: Building2 },
+    { id: AppView.ENTERTAINMENT, label: 'Entertainment Law', icon: Music },
     { id: AppView.PRACTICE_GUIDE, label: 'Practice Guides', icon: List },
     { id: AppView.EDITOR, label: 'Documents', icon: FileText },
     { id: AppView.PRECEDENTS, label: 'Precedents Library', icon: Library },

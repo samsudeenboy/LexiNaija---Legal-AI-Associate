@@ -18,12 +18,15 @@ export enum AppView {
   WITNESS = 'WITNESS',
   BRIEFS = 'BRIEFS',
   CORPORATE = 'CORPORATE',
+  ENTERTAINMENT = 'ENTERTAINMENT',
+  CALCULATOR = 'CALCULATOR',
   ANALYTICS = 'ANALYTICS',
   CASE_LAW = 'CASE_LAW',
   BAILIFF = 'BAILIFF',
   AUDIT = 'AUDIT',
   PORTAL = 'PORTAL',
-  LANDING = 'LANDING'
+  LANDING = 'LANDING',
+  AUTH = 'AUTH'
 }
 
 export interface ChatMessage {
@@ -198,3 +201,12 @@ export interface Suggestion {
   timestamp: Date;
 }
 
+export interface KnowledgeItem {
+  id: string;
+  title: string;
+  content: string;
+  category: 'Entertainment' | 'G.M IBRU' | 'LAW SCHOOL' | 'CAC' | 'General';
+  sourceFile?: string;
+  tags?: string[];
+  dateAdded: Date;
+}

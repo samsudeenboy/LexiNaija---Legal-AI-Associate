@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Client, Case, Invoice, SavedDocument, DocumentVersion, BillableItem, Task, FirmProfile, EvidenceItem, LegalAnalytics, AuditLogEntry, Suggestion, AppView } from '../types';
+import { Client, Case, Invoice, SavedDocument, DocumentVersion, BillableItem, Task, FirmProfile, EvidenceItem, LegalAnalytics, AuditLogEntry, Suggestion, AppView, KnowledgeItem } from '../types';
+import { supabase } from '../services/supabaseClient';
 
 interface LegalStoreContextType {
   firmProfile: FirmProfile;
@@ -38,6 +39,9 @@ interface LegalStoreContextType {
   dismissSuggestion: (id: string) => void;
   activeSuggestion: Suggestion | null;
   setActiveSuggestion: (s: Suggestion | null) => void;
+  knowledgeItems: KnowledgeItem[];
+  addKnowledgeItem: (item: KnowledgeItem) => void;
+  deleteKnowledgeItem: (id: string) => void;
 }
 
 const LegalStoreContext = createContext<LegalStoreContextType | undefined>(undefined);
@@ -91,7 +95,7 @@ const DEFAULT_CASES: Case[] = [
         custodyLocation: 'Case File'
       }
     ],
-    outcome: 'Pending' // Added outcome field
+    outcome: 'Pending'
   }
 ];
 
@@ -108,7 +112,6 @@ const DEFAULT_AUDIT_LOG: AuditLogEntry[] = [
   { id: 'al1', timestamp: new Date(), eventType: 'DOCUMENT_CREATED', documentId: '101', caseId: '101', userId: 'system', details: 'Initial case document created' }
 ];
 
-// JSON Date Reviver
 const dateReviver = (key: string, value: any) => {
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(value)) {
     return new Date(value);
@@ -117,7 +120,6 @@ const dateReviver = (key: string, value: any) => {
 };
 
 export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize State with LocalStorage or Defaults
   const [firmProfile, setFirmProfile] = useState<FirmProfile>(() => {
     try {
       const saved = localStorage.getItem('lexinaija_firmProfile');
@@ -180,7 +182,27 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
   const [activeSuggestion, setActiveSuggestion] = useState<Suggestion | null>(null);
 
-  // Agentic Audit Engine
+  const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('lexinaija_knowledgeItems');
+      return saved ? JSON.parse(saved, dateReviver) : [];
+    } catch (e) { return []; }
+  });
+
+  const pushToCloud = async (table: string, action: 'insert'|'update'|'delete', data: any, id?: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      if (action !== 'delete') data.user_id = session.user.id;
+
+      if (action === 'insert') await supabase.from(table).insert([data]);
+      else if (action === 'update') await supabase.from(table).update(data).match({ id });
+      else if (action === 'delete') await supabase.from(table).delete().match({ id });
+    } catch (err) {
+      console.warn(`Cloud sync failed for ${table}, using fallback mode.`);
+    }
+  };
+
   useEffect(() => {
     if (activeCaseId) {
         runAgenticAudit(activeCaseId);
@@ -195,9 +217,7 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
     const newSuggestions: Suggestion[] = [];
     
-    // 1. Evidence Gap Detection
     const titleLower = activeCase.title.toLowerCase();
-    const evidenceTypes = (activeCase.evidence || []).map(e => e.type);
     const evidenceDesc = (activeCase.evidence || []).map(e => e.description.toLowerCase());
 
     if (titleLower.includes('tenancy') || titleLower.includes('possession')) {
@@ -221,7 +241,6 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
     }
 
-    // 2. Deadline Awareness
     if (activeCase.nextHearing) {
         const hearingDate = new Date(activeCase.nextHearing);
         const diffDays = Math.ceil((hearingDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
@@ -243,7 +262,6 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         }
     }
 
-    // 3. Workflow Chaining (If Briefs are empty)
     if (activeCase.documents.length > 0 && !activeCase.documents.some(d => d.title.includes('Argument'))) {
         newSuggestions.push({
             id: 'suggest_brief_draft',
@@ -257,7 +275,6 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         });
     }
 
-    // 4. Billing Proactivity
     if (activeCase.status === 'Open' && (!activeCase.billableItems || activeCase.billableItems.length === 0)) {
         newSuggestions.push({
             id: 'suggest_billing_setup',
@@ -271,8 +288,7 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         });
     }
 
-    // 5. Conflict of Interest Check (New Cases)
-    const createdAt = new Date(activeCase.id === '101' ? '2024-01-01' : parseInt(activeCase.id)); // Fallback for demo IDs
+    const createdAt = new Date(activeCase.id === '101' ? '2024-01-01' : parseInt(activeCase.id));
     const ageHours = (new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60);
     if (ageHours < 24) {
         newSuggestions.push({
@@ -294,42 +310,72 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     setSuggestions(prev => prev.filter(s => s.id !== id));
   };
 
-  // Persist State Changes
   useEffect(() => {
     const v = localStorage.getItem('lexinaija_store_version');
     if (!v) localStorage.setItem('lexinaija_store_version', STORE_VERSION);
+
+    const initCloudData = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        
+        const [clientsRes, casesRes, docsRes, billRes, evRes, taskRes] = await Promise.all([
+          supabase.from('clients').select('*'),
+          supabase.from('cases').select('*'),
+          supabase.from('documents').select('*, document_versions(*)'),
+          supabase.from('billable_items').select('*'),
+          supabase.from('evidence').select('*'),
+          supabase.from('tasks').select('*')
+        ]);
+
+        if (clientsRes.data?.length) {
+          setClients(clientsRes.data.map((c: any) => ({
+            id: c.id, name: c.name, type: c.type, email: c.email, phone: c.phone, address: c.address, dateAdded: new Date(c.date_added)
+          })));
+        }
+
+        if (casesRes.data?.length) {
+          setCases(casesRes.data.map((c: any) => {
+            const caseDocs = (docsRes.data || []).filter((d: any) => d.case_id === c.id).map((d: any) => ({
+              id: d.id, title: d.title, content: d.content, type: d.type, status: d.status, timestamp: new Date(d.updated_at), createdAt: new Date(d.created_at),
+              versions: (d.document_versions || []).map((v: any) => ({ id: v.id, timestamp: new Date(v.timestamp), content: v.content, title: v.title }))
+            }));
+            const caseBills = (billRes.data || []).filter((b: any) => b.case_id === c.id).map((b: any) => ({
+              id: b.id, description: b.description, amount: b.amount, type: b.type, date: new Date(b.date)
+            }));
+            const caseEvs = (evRes.data || []).filter((e: any) => e.case_id === c.id).map((e: any) => ({
+              id: e.id, description: e.description, type: e.type, dateObtained: new Date(e.date_obtained), isReliedUpon: e.is_relied_upon, custody_location: e.custody_location
+            }));
+            return {
+              id: c.id, clientId: c.client_id, title: c.title, suit_number: c.suit_number, court: c.court, status: c.status,
+              nextHearing: c.next_hearing, notes: c.notes, opposingParty: c.opposing_party, outcome: c.outcome,
+              documents: caseDocs, billableItems: caseBills, evidence: caseEvs
+            };
+          }));
+        }
+        
+        if (taskRes.data?.length) {
+          setTasks(taskRes.data.map((t: any) => ({
+            id: t.id, title: t.title, dueDate: t.due_date ? new Date(t.due_date) : undefined, priority: t.priority, status: t.status, caseId: t.case_id
+          })));
+        }
+      } catch (e) {
+        console.warn('Cloud sync failed, using LocalStorage fallback.', e);
+      }
+    };
+    initCloudData();
+    supabase.auth.onAuthStateChange((event) => { if (event === 'SIGNED_IN') initCloudData(); });
   }, []);
-  useEffect(() => {
-    localStorage.setItem('lexinaija_firmProfile', JSON.stringify(firmProfile));
-  }, [firmProfile]);
 
-  useEffect(() => {
-    localStorage.setItem('lexinaija_clients', JSON.stringify(clients));
-  }, [clients]);
-
-  useEffect(() => {
-    localStorage.setItem('lexinaija_cases', JSON.stringify(cases));
-  }, [cases]);
-
-  useEffect(() => {
-    localStorage.setItem('lexinaija_invoices', JSON.stringify(invoices));
-  }, [invoices]);
-
-  useEffect(() => {
-    localStorage.setItem('lexinaija_tasks', JSON.stringify(tasks));
-  }, [tasks]);
-
-  useEffect(() => {
-    localStorage.setItem('lexinaija_credits_total', String(creditsTotal));
-  }, [creditsTotal]);
-
-  useEffect(() => {
-    localStorage.setItem('lexinaija_credits_used', String(creditsUsed));
-  }, [creditsUsed]);
-
-  useEffect(() => {
-    localStorage.setItem('lexinaija_auditLog', JSON.stringify(auditLog));
-  }, [auditLog]);
+  useEffect(() => { localStorage.setItem('lexinaija_firmProfile', JSON.stringify(firmProfile)); }, [firmProfile]);
+  useEffect(() => { localStorage.setItem('lexinaija_clients', JSON.stringify(clients)); }, [clients]);
+  useEffect(() => { localStorage.setItem('lexinaija_cases', JSON.stringify(cases)); }, [cases]);
+  useEffect(() => { localStorage.setItem('lexinaija_invoices', JSON.stringify(invoices)); }, [invoices]);
+  useEffect(() => { localStorage.setItem('lexinaija_tasks', JSON.stringify(tasks)); }, [tasks]);
+  useEffect(() => { localStorage.setItem('lexinaija_credits_total', String(creditsTotal)); }, [creditsTotal]);
+  useEffect(() => { localStorage.setItem('lexinaija_credits_used', String(creditsUsed)); }, [creditsUsed]);
+  useEffect(() => { localStorage.setItem('lexinaija_auditLog', JSON.stringify(auditLog)); }, [auditLog]);
+  useEffect(() => { localStorage.setItem('lexinaija_knowledgeItems', JSON.stringify(knowledgeItems)); }, [knowledgeItems]);
 
   const addAuditLogEntry = (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => {
     setAuditLog(prevLog => [...prevLog, { id: Date.now().toString(), timestamp: new Date(), ...entry }]);
@@ -343,28 +389,43 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return true;
   };
 
-  const addCredits = (units: number) => {
-    setCreditsTotal(creditsTotal + units);
-  };
+  const addCredits = (units: number) => setCreditsTotal(creditsTotal + units);
 
-  const addClient = (client: Client) => setClients([...clients, client]);
+  const addClient = (client: Client) => {
+    setClients([...clients, client]);
+    pushToCloud('clients', 'insert', { id: client.id, name: client.name, type: client.type, email: client.email, phone: client.phone, address: client.address, date_added: client.dateAdded });
+  };
   
   const updateClient = (id: string, data: Partial<Client>) => {
     setClients(clients.map(c => c.id === id ? { ...c, ...data } : c));
+    const dbData: any = { ...data };
+    if (data.dateAdded) dbData.date_added = data.dateAdded; delete dbData.dateAdded;
+    pushToCloud('clients', 'update', dbData, id);
   };
 
   const deleteClient = (id: string) => {
     setClients(clients.filter(c => c.id !== id));
+    pushToCloud('clients', 'delete', {}, id);
   };
 
-  const addCase = (newCase: Case) => setCases([...cases, newCase]);
+  const addCase = (newCase: Case) => {
+    setCases([...cases, newCase]);
+    pushToCloud('cases', 'insert', { id: newCase.id, client_id: newCase.clientId, title: newCase.title, suit_number: newCase.suitNumber, court: newCase.court, status: newCase.status, next_hearing: newCase.nextHearing, notes: newCase.notes, opposing_party: newCase.opposingParty, outcome: newCase.outcome });
+  };
   
   const updateCase = (id: string, data: Partial<Case>) => {
     setCases(cases.map(c => c.id === id ? { ...c, ...data } : c));
+    const dbData: any = { ...data };
+    if (data.clientId) dbData.client_id = data.clientId; delete dbData.clientId;
+    if (data.suitNumber) dbData.suit_number = data.suitNumber; delete dbData.suitNumber;
+    if (data.nextHearing) dbData.next_hearing = data.nextHearing; delete dbData.nextHearing;
+    if (data.opposingParty) dbData.opposing_party = data.opposingParty; delete dbData.opposingParty;
+    pushToCloud('cases', 'update', dbData, id);
   };
 
   const deleteCase = (id: string) => {
     setCases(cases.filter(c => c.id !== id));
+    pushToCloud('cases', 'delete', {}, id);
   };
 
   const addInvoice = (invoice: Invoice) => setInvoices([...invoices, invoice]);
@@ -374,6 +435,7 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       if (c.id === caseId) {
         const newDoc: SavedDocument = { ...doc, status: 'Draft' };
         addAuditLogEntry({ eventType: 'DOCUMENT_CREATED', documentId: newDoc.id, caseId: caseId, userId: 'system', details: `Document '${newDoc.title}' created.` });
+        pushToCloud('documents', 'insert', { id: newDoc.id, case_id: caseId, title: newDoc.title, content: newDoc.content, type: newDoc.type, status: newDoc.status });
         return { ...c, documents: [...c.documents, newDoc] };
       }
       return c;
@@ -387,14 +449,11 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           ...c,
           documents: c.documents.map(d => {
             if (d.id === docId) {
-               const version: DocumentVersion = {
-                 id: Date.now().toString(),
-                 timestamp: new Date(),
-                 content: d.content,
-                 title: d.title
-               };
+               const version: DocumentVersion = { id: Date.now().toString(), timestamp: new Date(), content: d.content, title: d.title };
                const existingVersions = d.versions || [];
                addAuditLogEntry({ eventType: 'DOCUMENT_UPDATED', documentId: docId, caseId: caseId, userId: 'system', details: `Document '${d.title}' updated.` });
+               pushToCloud('documents', 'update', { title: updates.title || d.title, content: updates.content || d.content, status: updates.status || d.status }, docId);
+               pushToCloud('document_versions', 'insert', { id: version.id, document_id: docId, content: version.content, title: version.title });
                return { ...d, ...updates, versions: [version, ...existingVersions] };
             }
             return d;
@@ -408,6 +467,7 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const addBillableItem = (caseId: string, item: BillableItem) => {
     setCases(cases.map(c => {
       if (c.id === caseId) {
+        pushToCloud('billable_items', 'insert', { id: item.id, case_id: caseId, description: item.description, amount: item.amount, type: item.type, date: item.date });
         return { ...c, billableItems: [...c.billableItems, item] };
       }
       return c;
@@ -417,6 +477,7 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const addEvidence = (caseId: string, item: EvidenceItem) => {
     setCases(cases.map(c => {
       if (c.id === caseId) {
+        pushToCloud('evidence', 'insert', { id: item.id, case_id: caseId, description: item.description, type: item.type, date_obtained: item.dateObtained, is_relied_upon: item.isReliedUpon, custody_location: item.custodyLocation });
         return { ...c, evidence: [...(c.evidence || []), item] };
       }
       return c;
@@ -426,123 +487,105 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const deleteEvidence = (caseId: string, evidenceId: string) => {
     setCases(cases.map(c => {
       if (c.id === caseId) {
+        pushToCloud('evidence', 'delete', {}, evidenceId);
         return { ...c, evidence: (c.evidence || []).filter(e => e.id !== evidenceId) };
       }
       return c;
     }));
   };
 
-  const addTask = (task: Task) => setTasks([...tasks, task]);
+  const addTask = (task: Task) => {
+    setTasks([...tasks, task]);
+    pushToCloud('tasks', 'insert', { id: task.id, case_id: task.caseId, title: task.title, due_date: task.dueDate, priority: task.priority, status: task.status });
+  };
   
   const updateTask = (id: string, data: Partial<Task>) => {
     setTasks(tasks.map(t => t.id === id ? { ...t, ...data } : t));
+    const dbData: any = { ...data };
+    if (data.caseId) dbData.case_id = data.caseId; delete dbData.caseId;
+    if (data.dueDate) dbData.due_date = data.dueDate; delete dbData.dueDate;
+    pushToCloud('tasks', 'update', dbData, id);
   };
   
   const deleteTask = (id: string) => {
     setTasks(tasks.filter(t => t.id !== id));
+    pushToCloud('tasks', 'delete', {}, id);
   };
 
-      const getAnalytics = (): LegalAnalytics => {
-      const totalCases = cases.length;
-      const activeCases = cases.filter(c => c.status === 'Open' || c.status === 'Pending Court' || c.status === 'Drafting').length;
-      const closedCases = cases.filter(c => c.status === 'Closed').length;
-      const totalClients = clients.length;
-      const totalRevenue = invoices.reduce((sum, inv) => sum + inv.amount, 0);
-      const averageCaseValue = totalCases > 0 ? totalRevenue / totalCases : 0;
-  
-      const caseStatusDistribution = {
-        Open: cases.filter(c => c.status === 'Open').length,
-        'Pending Court': cases.filter(c => c.status === 'Pending Court').length,
-        Closed: closedCases,
-        Drafting: cases.filter(c => c.status === 'Drafting').length,
-      };
-  
-      const outcomeDistribution = {
-        Won: cases.filter(c => c.outcome === 'Won').length,
-        Lost: cases.filter(c => c.outcome === 'Lost').length,
-        Settled: cases.filter(c => c.outcome === 'Settled').length,
-        Dismissed: cases.filter(c => c.outcome === 'Dismissed').length,
-        Pending: cases.filter(c => c.outcome === 'Pending').length,
-      };
-  
-      const totalResolvedCases = cases.filter(c => c.outcome && c.outcome !== 'Pending').length;
-      const wonCases = cases.filter(c => c.outcome === 'Won').length;
-      const winRate = totalResolvedCases > 0 ? (wonCases / totalResolvedCases) * 100 : 0;
-  
-      // Generate monthly revenue data for the last 6 months
-      const monthlyRevenue = [];
-      const currentDate = new Date();
-      for (let i = 5; i >= 0; i--) {
-        const month = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
-        const monthName = month.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        const monthInvoices = invoices.filter(inv => {
-          const invDate = new Date(inv.date);
-          return invDate.getMonth() === month.getMonth() && invDate.getFullYear() === month.getFullYear();
-        });
-        const revenue = monthInvoices.reduce((sum, inv) => sum + inv.amount, 0);
-        const casesCount = monthInvoices.length;
-        monthlyRevenue.push({ month: monthName, revenue, cases: casesCount });
-      }
-  
-      // Calculate top clients by revenue
-      const clientRevenue = new Map<string, { name: string; revenue: number; cases: number }>();
-      invoices.forEach(inv => {
-        const client = clients.find(c => c.id === inv.clientId);
-        if (client) {
-          const existing = clientRevenue.get(inv.clientId) || { name: client.name, revenue: 0, cases: 0 };
-          existing.revenue += inv.amount;
-          existing.cases += 1;
-          clientRevenue.set(inv.clientId, existing);
-        }
-      });
-  
-      const topClients = Array.from(clientRevenue.entries())
-        .map(([clientId, data]) => ({
-          clientId,
-          clientName: data.name,
-          totalRevenue: data.revenue,
-          caseCount: data.cases,
-        }))
-        .sort((a, b) => b.totalRevenue - a.totalRevenue)
-        .slice(0, 5);
-  
-      // Calculate case types based on case titles
-      const caseTypes = new Map<string, { count: number; totalValue: number }>();
-      cases.forEach(c => {
-        const type = c.title.includes('Tenancy') ? 'Tenancy' :
-                     c.title.includes('Contract') ? 'Contract' :
-                     c.title.includes('Corporate') ? 'Corporate' :
-                     c.title.includes('Divorce') ? 'Family' :
-                     c.title.includes('Criminal') ? 'Criminal' : 'General';
-        
-        const existing = caseTypes.get(type) || { count: 0, totalValue: 0 };
-        existing.count += 1;
-        const caseInvoices = invoices.filter(inv => inv.caseId === c.id);
-        existing.totalValue += caseInvoices.reduce((sum, inv) => sum + inv.amount, 0);
-        caseTypes.set(type, existing);
-      });
-  
-      const caseTypesArray = Array.from(caseTypes.entries()).map(([type, data]) => ({
-        type,
-        count: data.count,
-        avgValue: data.count > 0 ? data.totalValue / data.count : 0,
-      }));
-  
-      return {
-        totalCases,
-        activeCases,
-        closedCases,
-        totalClients,
-        totalRevenue,
-        averageCaseValue,
-        caseStatusDistribution,
-        monthlyRevenue,
-        topClients,
-        caseTypes: caseTypesArray,
-        outcomeDistribution,
-        winRate
-      };
+  const addKnowledgeItem = (item: KnowledgeItem) => {
+    setKnowledgeItems(prev => [...prev, item]);
+    pushToCloud('knowledge_items', 'insert', { id: item.id, title: item.title, content: item.content, category: item.category, source_file: item.sourceFile, tags: item.tags, date_added: item.dateAdded });
+  };
+
+  const deleteKnowledgeItem = (id: string) => {
+    setKnowledgeItems(prev => prev.filter(k => k.id !== id));
+    pushToCloud('knowledge_items', 'delete', {}, id);
+  };
+
+  const getAnalytics = (): LegalAnalytics => {
+    const totalCases = cases.length;
+    const activeCases = cases.filter(c => c.status === 'Open' || c.status === 'Pending Court' || c.status === 'Drafting').length;
+    const closedCases = cases.filter(c => c.status === 'Closed').length;
+    const totalClients = clients.length;
+    const totalRevenue = invoices.reduce((sum, inv) => sum + inv.amount, 0);
+    const averageCaseValue = totalCases > 0 ? totalRevenue / totalCases : 0;
+
+    const caseStatusDistribution = {
+      Open: cases.filter(c => c.status === 'Open').length,
+      'Pending Court': cases.filter(c => c.status === 'Pending Court').length,
+      Closed: closedCases,
+      Drafting: cases.filter(c => c.status === 'Drafting').length,
     };
+
+    const outcomeDistribution = {
+      Won: cases.filter(c => c.outcome === 'Won').length,
+      Lost: cases.filter(c => c.outcome === 'Lost').length,
+      Settled: cases.filter(c => c.outcome === 'Settled').length,
+      Dismissed: cases.filter(c => c.outcome === 'Dismissed').length,
+      Pending: cases.filter(c => c.outcome === 'Pending').length,
+    };
+
+    const totalResolvedCases = cases.filter(c => c.outcome && c.outcome !== 'Pending').length;
+    const wonCases = cases.filter(c => c.outcome === 'Won').length;
+    const winRate = totalResolvedCases > 0 ? (wonCases / totalResolvedCases) * 100 : 0;
+
+    const monthlyRevenue = [];
+    const currentDate = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const month = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const monthName = month.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      const revenue = invoices.filter(inv => {
+        const d = new Date(inv.date);
+        return d.getMonth() === month.getMonth() && d.getFullYear() === month.getFullYear();
+      }).reduce((sum, inv) => sum + inv.amount, 0);
+      monthlyRevenue.push({ month: monthName, revenue, cases: invoices.filter(inv => (new Date(inv.date)).getMonth() === month.getMonth()).length });
+    }
+
+    const clientRevenue = new Map<string, { name: string; revenue: number; cases: number }>();
+    invoices.forEach(inv => {
+      const client = clients.find(c => c.id === inv.clientId);
+      if (client) {
+        const existing = clientRevenue.get(inv.clientId) || { name: client.name, revenue: 0, cases: 0 };
+        existing.revenue += inv.amount;
+        existing.cases += 1;
+        clientRevenue.set(inv.clientId, existing);
+      }
+    });
+
+    const topClients = Array.from(clientRevenue.entries()).map(([clientId, data]) => ({ clientId, clientName: data.name, totalRevenue: data.revenue, caseCount: data.cases })).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 5);
+
+    const caseTypes = new Map<string, { count: number; totalValue: number }>();
+    cases.forEach(c => {
+      const type = c.title.includes('Tenancy') ? 'Tenancy' : c.title.includes('Contract') ? 'Contract' : c.title.includes('Corporate') ? 'Corporate' : c.title.includes('Divorce') ? 'Family' : c.title.includes('Criminal') ? 'Criminal' : 'General';
+      const existing = caseTypes.get(type) || { count: 0, totalValue: 0 };
+      existing.count += 1;
+      existing.totalValue += invoices.filter(inv => inv.caseId === c.id).reduce((sum, inv) => sum + inv.amount, 0);
+      caseTypes.set(type, existing);
+    });
+
+    return { totalCases, activeCases, closedCases, totalClients, totalRevenue, averageCaseValue, caseStatusDistribution, outcomeDistribution, winRate, monthlyRevenue, topClients, caseTypes: Array.from(caseTypes.entries()).map(([type, data]) => ({ type, count: data.count, avgValue: data.count > 0 ? data.totalValue / data.count : 0 })) };
+  };
+
   return (
     <LegalStoreContext.Provider value={{ 
       firmProfile, clients, cases, invoices, tasks, activeDoc,
@@ -553,7 +596,8 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       addTask, updateTask, deleteTask, addEvidence, deleteEvidence, setActiveDoc, getAnalytics,
       auditLog, addAuditLogEntry,
       suggestions,      activeCaseId, setActiveCaseId, dismissSuggestion,
-      activeSuggestion, setActiveSuggestion
+      activeSuggestion, setActiveSuggestion,
+      knowledgeItems, addKnowledgeItem, deleteKnowledgeItem
     }}>
       {children}
     </LegalStoreContext.Provider>
@@ -562,8 +606,6 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
 export const useLegalStore = () => {
   const context = useContext(LegalStoreContext);
-  if (context === undefined) {
-    throw new Error('useLegalStore must be used within a LegalStoreProvider');
-  }
+  if (context === undefined) throw new Error('useLegalStore must be used within a LegalStoreProvider');
   return context;
 };

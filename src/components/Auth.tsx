@@ -3,7 +3,11 @@ import { supabase } from '../services/supabaseClient';
 import { ShieldCheck, Mail, Lock, Loader2, Sparkles, X } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 
-export const Auth: React.FC = () => {
+interface AuthProps {
+  onAuthSuccess?: () => void;
+}
+
+export const Auth: React.FC<AuthProps> = ({ onAuthSuccess }) => {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
@@ -19,10 +23,12 @@ export const Auth: React.FC = () => {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
         showToast("Authorization link dispatched. Check your mailbox.", "success");
+        onAuthSuccess?.();
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         showToast("Identity verified. Welcome back, Counsel.", "success");
+        onAuthSuccess?.();
       }
     } catch (error: any) {
       showToast(error.message, "error");

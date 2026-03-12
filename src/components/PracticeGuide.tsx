@@ -14,6 +14,77 @@ interface Guide {
 const GUIDES: Guide[] = [
   // --- PROPERTY ---
   {
+    id: 'nls-civil-w3',
+    category: 'NLS Curriculum',
+    title: 'Week 3: Overview of Civil Litigation',
+    description: 'Foundational concepts and jurisdiction of courts in Nigeria.',
+    steps: [
+      'Identify the appropriate court based on subject matter jurisdiction.',
+      'Check monetary jurisdiction (Magistrate vs. High Court).',
+      'Verify geographical jurisdiction (where the cause of action arose or defendant resides).',
+      'Determine the applicable Rules of Court (e.g., Lagos 2019, Abuja 2018).',
+      'Consider ethical issues arising from choosing the wrong court.'
+    ]
+  },
+  {
+    id: 'nls-civil-w5',
+    category: 'NLS Curriculum',
+    title: 'Week 5: Pre-Action Considerations',
+    description: 'Mandatory steps before filing a civil suit.',
+    steps: [
+      'Check for valid Cause of Action.',
+      'Verify if the suit is Statute Barred (Statutory Limitation).',
+      'Serve Pre-Action Notice where required (e.g., against Government agencies).',
+      'Attempt Alternative Dispute Resolution (ADR) or Mediation.',
+      'Prepare Pre-Action Counseling Certificate (Form 01 in Lagos).',
+      'Confirm exhaustion of internal remedies.'
+    ]
+  },
+  {
+    id: 'nls-civil-w6',
+    category: 'NLS Curriculum',
+    title: 'Week 6: Commencement of Action',
+    description: 'Filing originating processes in the High Court.',
+    steps: [
+      'Prepare the Writ of Summons (where facts are in dispute).',
+      'Draft the Statement of Claim.',
+      'Prepare Witness Statement on Oath.',
+      'Compile list of witnesses and list of exhibits/documents.',
+      'Attach Pre-Action Protocol Form 01 (Lagos).',
+      'File processes at the Registry and pay prescribed fees.',
+      'Ensure service by the Court Bailiff.'
+    ]
+  },
+  {
+    id: 'nls-civil-w10',
+    category: 'NLS Curriculum',
+    title: 'Week 10: Pre-Trial Proceedings',
+    description: 'Case management and discovery phase.',
+    steps: [
+      'Apply for Case Management Conference (CMC).',
+      'Prepare Case Management Information Sheet.',
+      'Conduct Discovery and Inspection of Documents.',
+      'Serve Interrogatories where necessary.',
+      'Attend CMC for settlement of issues or possible ADR referral.',
+      'Obtain Pre-Trial Report.'
+    ]
+  },
+  {
+    id: 'nls-crim-w8',
+    category: 'NLS Curriculum',
+    title: 'Week 8: Drafting Charges',
+    description: 'Procedure for drafting valid criminal charges.',
+    steps: [
+      'Identify the Accused Person(s) by name and description.',
+      'State the date and place of the offence.',
+      'Describe the offence concisely (Statement of Offence).',
+      'Cite the specific section of the law contravened (Particulars of Offence).',
+      'Avoid Duplicity (joining two offences in one count).',
+      'Avoid Misjoinder of offences or offenders.',
+      'Ensure the charge is signed by an authorized person.'
+    ]
+  },
+  {
     id: 'g1',
     category: 'Property',
     title: 'Perfection of Title (Lagos State)',
@@ -163,6 +234,33 @@ const GUIDES: Guide[] = [
       'Publish the change of name in a National Newspaper.',
       'Publish in the Official Gazette (optional but recommended for official use).',
       'Update records with banks, NIMC, and other institutions.'
+    ]
+  },
+  {
+    id: 'g10',
+    category: 'Entertainment',
+    title: 'Copyright Registration (NCC)',
+    description: 'Procedure for registering creative works with the Nigerian Copyright Commission under the 2023 Act.',
+    steps: [
+      'Confirm eligibility (Literary, Musical, Artistic, Audiovisual, etc.).',
+      'Ensure "Fixation" in a definite medium.',
+      'Access NCC e-Registration portal.',
+      'Upload the work and complete prescribed forms.',
+      'Pay registration fees via Remita.',
+      'Download the Certificate of Registration upon approval.'
+    ]
+  },
+  {
+    id: 'g11',
+    category: 'Entertainment',
+    title: 'Royalty & PRO Registration',
+    description: 'Procedure for music royalty collection in Nigeria.',
+    steps: [
+      'Signed Split Sheet among all contributors.',
+      'Join a Collective Management Organization (MCSN or COSON).',
+      'Register the work metadata with the CMO.',
+      'Register with digital aggregators for DSP distribution.',
+      'Confirm ISRC and UPC codes are correctly embedded.'
     ]
   }
 ];

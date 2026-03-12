@@ -61,9 +61,11 @@ export const Strategy: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-white flex flex-col overflow-hidden">
-      {/* Header Bar */}
-      <div className="h-20 border-b border-slate-100 flex items-center justify-between px-10 shrink-0 bg-white z-10">
+    <div className="h-screen bg-slate-50 flex flex-col overflow-hidden relative">
+      {/* Background Accent */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-legal-gold/5 rounded-full blur-[120px] pointer-events-none"></div>
+
+      <div className="h-20 border-b border-slate-100 flex items-center justify-between px-10 shrink-0 bg-white/80 backdrop-blur-md z-20">
         <div className="flex items-center gap-4">
             <div className="w-10 h-10 bg-legal-900 rounded-2xl flex items-center justify-center">
                 <BrainCircuit className="text-legal-gold" size={20} />
@@ -74,19 +76,19 @@ export const Strategy: React.FC = () => {
             </div>
         </div>
         <div className="flex items-center gap-6">
-            <div className="px-4 py-2 bg-slate-50 rounded-xl flex items-center gap-3">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Power</span>
-                <span className="text-sm font-black text-legal-900 italic tracking-tighter">{creditsTotal - creditsUsed} CR</span>
+            <div className="px-4 py-2 bg-slate-900 rounded-xl flex items-center gap-3 shadow-lg">
+                <span className="text-[10px] font-black text-legal-gold uppercase tracking-widest">Power</span>
+                <span className="text-sm font-black text-white italic tracking-tighter">{creditsTotal - creditsUsed} CR</span>
             </div>
-            <button className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 hover:text-legal-900 transition-colors">
+            <button className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-legal-900 transition-all hover:bg-white shadow-sm">
                 <X size={18} />
             </button>
         </div>
       </div>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative z-10 p-6 gap-6">
         {/* Left Side: Parameters Panel */}
-        <div className="w-[450px] border-r border-slate-100 flex flex-col bg-slate-50/30 overflow-hidden">
+        <div className="w-[450px] bg-white/70 backdrop-blur-xl rounded-[40px] border border-white shadow-2xl flex flex-col overflow-hidden">
           <div className="p-8 flex-1 overflow-y-auto space-y-8 scrollbar-hide">
             <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Ingest Context from Matter</label>
@@ -137,27 +139,28 @@ export const Strategy: React.FC = () => {
                 />
             </div>
             
-            <div className="p-6 bg-amber-50/50 border border-amber-100 rounded-3xl">
-              <div className="flex gap-3 mb-2">
-                <Scale size={16} className="text-amber-500 shrink-0" />
-                <span className="text-[10px] font-black text-amber-900 uppercase tracking-widest">Advisory Notice</span>
+            <div className="p-8 bg-legal-900/5 border border-legal-gold/10 rounded-[32px] relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-legal-gold opacity-5 rounded-bl-full translate-x-12 -translate-y-12 group-hover:scale-150 transition-transform duration-1000"></div>
+              <div className="flex gap-3 mb-3 relative">
+                <Scale size={16} className="text-legal-gold shrink-0" />
+                <span className="text-[10px] font-black text-legal-900 uppercase tracking-widest">Advisory Notice</span>
               </div>
-              <p className="text-[11px] text-amber-800 leading-relaxed font-medium italic">
-                Strategic opinions are predictive models based on reported Nigerian jurisprudence and should be cross-referenced with recent Law Reports.
+              <p className="text-[11px] text-slate-500 leading-relaxed font-bold italic relative">
+                Strategic opinions are predictive models based on reported Nigerian jurisprudence (SC/CA/FHC) and should be validated with recent Law Reports.
               </p>
             </div>
           </div>
 
-          <div className="p-8 bg-white border-t border-slate-100">
+          <div className="p-8 bg-white/50 backdrop-blur-md border-t border-white flex-shrink-0">
             <button 
                 onClick={handleAnalyze}
                 disabled={isAnalyzing || !facts}
-                className="w-full bg-legal-900 text-white py-5 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-legal-900/20 hover:bg-legal-gold hover:text-legal-900 transition-all flex items-center justify-center gap-3 disabled:opacity-20 group"
+                className="w-full bg-legal-900 text-white py-6 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-2xl shadow-legal-900/20 hover:bg-legal-gold hover:text-legal-900 transition-all flex items-center justify-center gap-3 disabled:opacity-20 group active:scale-95"
             >
                 {isAnalyzing ? (
                   <RefreshCw size={18} className="animate-spin" />
                 ) : (
-                  <Play size={18} className="group-hover:translate-x-1 transition-transform" /> 
+                  <Play size={18} className="group-hover:scale-125 transition-transform" /> 
                 )}
                 {isAnalyzing ? 'Processing Merits...' : 'Synthesize Strategic Opinion'}
             </button>
@@ -165,29 +168,35 @@ export const Strategy: React.FC = () => {
         </div>
 
         {/* Right Side: Output Panel */}
-        <div className="flex-1 bg-white overflow-hidden flex flex-col">
+        <div className="flex-1 bg-white/70 backdrop-blur-xl rounded-[40px] border border-white shadow-2xl overflow-hidden flex flex-col">
           {strategyReport ? (
             <>
-              <div className="p-8 border-b border-slate-100 flex justify-between items-center bg-white z-10">
-                <div>
-                  <h3 className="text-xl font-serif font-black text-legal-900 italic tracking-tight flex items-center gap-3">
-                    <Target size={20} className="text-legal-gold" /> Merits & Strategy Report
-                  </h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Generated: {new Date().toLocaleDateString()}</p>
+              <div className="px-8 py-6 border-b border-slate-50 flex justify-between items-center bg-white/50 backdrop-blur-md z-10">
+                <div className="flex items-center gap-6">
+                  <div className="w-12 h-12 bg-legal-900 rounded-[20px] flex items-center justify-center shadow-xl shadow-legal-900/10">
+                    <Target size={24} className="text-legal-gold" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-serif font-black text-legal-900 italic tracking-tighter">Merits & Strategy Report</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Generation: {new Date().toLocaleDateString()}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <button 
                     onClick={copyToClipboard}
-                    className="p-3 bg-slate-50 text-slate-400 hover:bg-legal-900 hover:text-white rounded-xl transition-all"
+                    className="p-4 bg-white text-slate-400 hover:bg-legal-900 hover:text-white rounded-[20px] border border-slate-100 transition-all shadow-sm hover:shadow-xl active:scale-95"
                     title="Copy to Clipboard"
                   >
                     <Clipboard size={18} />
                   </button>
                   <button 
                     onClick={() => setShowArchiveModal(true)}
-                    className="flex items-center gap-2 bg-legal-900 text-white px-6 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-legal-gold hover:text-legal-900 transition-all shadow-lg"
+                    className="flex items-center gap-3 bg-legal-900 text-white px-8 py-4 rounded-[20px] font-black uppercase tracking-widest text-[10px] hover:bg-legal-gold hover:text-legal-900 transition-all shadow-2xl shadow-legal-900/20 active:scale-95 group"
                   >
-                    <Bookmark size={16} /> Archive to Matter
+                    <Bookmark size={16} className="group-hover:-translate-y-1 transition-transform" /> Archive to Matter
                   </button>
                 </div>
               </div>

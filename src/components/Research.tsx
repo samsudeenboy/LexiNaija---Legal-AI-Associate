@@ -12,7 +12,7 @@ import { useToast } from '../contexts/ToastContext';
 
 export const Research: React.FC = () => {
   const { showToast } = useToast();
-  const { cases, saveDocumentToCase, consumeCredits, creditsTotal, creditsUsed } = useLegalStore();
+  const { cases, saveDocumentToCase, consumeCredits, creditsTotal, creditsUsed, knowledgeItems } = useLegalStore();
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
@@ -27,6 +27,7 @@ export const Research: React.FC = () => {
   const [selectedCase, setSelectedCase] = useState('');
   const [saveTitle, setSaveTitle] = useState('');
   const [textToSave, setTextToSave] = useState('');
+  const [selectedContextId, setSelectedContextId] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const suggestedPrompts = [
@@ -67,7 +68,8 @@ export const Research: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const responseText = await generateLegalResearch(userMsg.text);
+      const activeContext = knowledgeItems.find(k => k.id === selectedContextId)?.content;
+      const responseText = await generateLegalResearch(userMsg.text, activeContext);
       const botMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'model',
@@ -131,6 +133,20 @@ export const Research: React.FC = () => {
             <button className="p-2 text-slate-300 hover:text-legal-900 transition-colors">
                 <Share2 size={20} />
             </button>
+            <div className="h-10 w-px bg-slate-100 mx-2"></div>
+            <div className="flex flex-col items-start">
+              <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Background Knowledge</label>
+              <select 
+                value={selectedContextId}
+                onChange={e => setSelectedContextId(e.target.value)}
+                className="bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[10px] font-bold text-legal-900 outline-none focus:ring-2 focus:ring-legal-gold/20"
+              >
+                <option value="">-- No Reference --</option>
+                {knowledgeItems.map(k => (
+                  <option key={k.id} value={k.id}>{k.title}</option>
+                ))}
+              </select>
+            </div>
         </div>
       </div>
 

@@ -14,7 +14,7 @@ type Step = 'type' | 'parties' | 'terms' | 'preview';
 
 export const Drafter: React.FC = () => {
   const { showToast } = useToast();
-  const { cases, clients, updateCaseDocument, saveDocumentToCase, creditsTotal, creditsUsed, consumeCredits, activeSuggestion, setActiveSuggestion } = useLegalStore();
+  const { cases, clients, updateCaseDocument, saveDocumentToCase, creditsTotal, creditsUsed, consumeCredits, activeSuggestion, setActiveSuggestion, knowledgeItems } = useLegalStore();
   const [currentStep, setCurrentStep] = useState<Step>('type');
   const [params, setParams] = useState<ContractParams>({
     type: 'Tenancy Agreement',
@@ -32,6 +32,7 @@ export const Drafter: React.FC = () => {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const [prefillCaseId, setPrefillCaseId] = useState('');
+  const [selectedContextId, setSelectedContextId] = useState<string>('');
 
   // Handle Actionable Intelligence (Injected State)
   useEffect(() => {
@@ -90,7 +91,8 @@ export const Drafter: React.FC = () => {
         showToast("Insufficient Intelligence Credits.", "error");
         return;
       }
-      const result = await draftContract(params);
+      const activeContext = knowledgeItems.find(k => k.id === selectedContextId)?.content;
+      const result = await draftContract(params, activeContext);
       setGeneratedDraft(result);
     } catch (error) {
       showToast("Drafting protocol failure.", "error");
@@ -235,11 +237,28 @@ export const Drafter: React.FC = () => {
                             <select 
                                 value={prefillCaseId}
                                 onChange={e => handlePrefillFromCase(e.target.value)}
-                                className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold text-legal-900 focus:ring-2 focus:ring-legal-gold/20 outline-none appearance-none"
+                                className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold text-legal-900 focus:ring-2 focus:ring-legal-gold/20 outline-none appearance-none mb-6"
                             >
                                 <option value="">-- No linked matter --</option>
                                 {cases.map(c => (
                                     <option key={c.id} value={c.id}>{c.title}</option>
+                                ))}
+                            </select>
+
+                            <h3 className="text-sm font-black text-legal-900 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <Sparkles size={16} className="text-legal-gold" /> Reference Precedent
+                            </h3>
+                            <p className="text-xs text-slate-500 mb-6 leading-relaxed">Select specialized knowledge from your institutional folders to guide the AI's drafting style.</p>
+                            
+                            <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Knowledge Item</label>
+                            <select 
+                                value={selectedContextId}
+                                onChange={e => setSelectedContextId(e.target.value)}
+                                className="w-full bg-white border border-slate-200 rounded-2xl px-5 py-4 text-sm font-bold text-legal-900 focus:ring-2 focus:ring-legal-gold/20 outline-none appearance-none"
+                            >
+                                <option value="">-- No Reference --</option>
+                                {knowledgeItems.map(k => (
+                                    <option key={k.id} value={k.id}>{k.title}</option>
                                 ))}
                             </select>
                         </div>

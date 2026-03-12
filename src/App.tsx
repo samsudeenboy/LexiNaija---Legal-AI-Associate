@@ -1,6 +1,7 @@
 import React, { useState, Suspense, lazy, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { LandingPage } from './components/LandingPage';
+import { Auth } from './components/Auth';
 import { CommandPalette } from './components/CommandPalette';
 const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
 const Research = lazy(() => import('./components/Research').then(m => ({ default: m.Research })));
@@ -26,6 +27,8 @@ const CaseLawDatabase = lazy(() => import('./components/CaseLawDatabase').then(m
 const BailiffTracker = lazy(() => import('./components/BailiffTracker').then(m => ({ default: m.BailiffTracker })));
 const ComplianceAudit = lazy(() => import('./components/ComplianceAudit').then(m => ({ default: m.ComplianceAudit })));
 const ClientPortal = lazy(() => import('./components/ClientPortal').then(m => ({ default: m.ClientPortal })));
+const Entertainment = lazy(() => import('./components/Entertainment').then(m => ({ default: m.Entertainment })));
+const FeeCalculator = lazy(() => import('./components/FeeCalculator').then(m => ({ default: m.FeeCalculator })));
 import { AppView } from './types';
 import { LegalStoreProvider } from './contexts/LegalStoreContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -48,7 +51,9 @@ function App() {
   const renderView = () => {
     switch (currentView) {
       case AppView.LANDING:
-        return <LandingPage onGetStarted={() => setCurrentView(AppView.DASHBOARD)} />;
+        return <LandingPage onGetStarted={() => setCurrentView(AppView.AUTH)} />;
+      case AppView.AUTH:
+        return <Auth onAuthSuccess={() => setCurrentView(AppView.DASHBOARD)} />;
       case AppView.DASHBOARD:
         return <Dashboard onNavigate={setCurrentView} />;
       case AppView.DOCKET:
@@ -87,6 +92,10 @@ function App() {
         return <Briefs />;
       case AppView.CORPORATE:
         return <Corporate />;
+      case AppView.ENTERTAINMENT:
+        return <Entertainment />;
+      case AppView.CALCULATOR:
+        return <FeeCalculator />;
       case AppView.ANALYTICS:
         return <Analytics />;
       case AppView.CASE_LAW:
@@ -106,8 +115,8 @@ function App() {
     <LegalStoreProvider>
       <ToastProvider>
         <div className="flex h-screen w-full bg-slate-50 font-sans text-slate-900">
-          {currentView !== AppView.LANDING && <Sidebar currentView={currentView} setView={setCurrentView} />}
-          <main className={`flex-1 ${currentView !== AppView.LANDING ? 'ml-64' : ''} overflow-auto scrollbar-hide ${currentView === AppView.EDITOR || currentView === AppView.DOCKET || currentView === AppView.EVIDENCE || currentView === AppView.WITNESS || currentView === AppView.BRIEFS || currentView === AppView.CORPORATE ? 'bg-white' : ''}`}>
+          {(currentView !== AppView.LANDING && currentView !== AppView.AUTH) && <Sidebar currentView={currentView} setView={setCurrentView} />}
+          <main className={`flex-1 ${(currentView !== AppView.LANDING && currentView !== AppView.AUTH) ? 'ml-64' : ''} overflow-auto scrollbar-hide ${currentView === AppView.EDITOR || currentView === AppView.DOCKET || currentView === AppView.EVIDENCE || currentView === AppView.WITNESS || currentView === AppView.BRIEFS || currentView === AppView.CORPORATE ? 'bg-white' : ''}`}>
             <Suspense fallback={<div className="p-6 text-sm text-gray-600">Loading…</div>}>
               {renderView()}
             </Suspense>
