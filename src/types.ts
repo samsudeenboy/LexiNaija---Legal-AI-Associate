@@ -60,11 +60,6 @@ export interface Client {
   phone: string;
   address: string;
   dateAdded: Date;
-  // KYC/AML Compliance Fields
-  rcNumber?: string; // Corporate Registration (CAMA 2020)
-  tin?: string; // Tax Identification Number (FIRS)
-  idType?: 'BVN' | 'NIN' | 'International Passport' | 'Drivers License';
-  idNumber?: string; // Identification document number
   retainerRef?: string; // Reference to signed retainer/engagement letter
   conflictCleared?: boolean; // Confirms conflict check was performed
 }

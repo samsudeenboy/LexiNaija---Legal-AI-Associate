@@ -10,7 +10,6 @@ import { runGroq } from "./groqService";
 export const runAI = async (prompt: string): Promise<string> => {
   try {
     // Attempt Primary Neural Core (Gemini)
-    console.log("Orchestrator: Engaging Gemini 2.0 Flash...");
     return await runGemini(prompt);
   } catch (geminiError: any) {
     console.warn("Orchestrator: Gemini Core Quota/Failure detected. Initiating Failover...");
@@ -20,7 +19,6 @@ export const runAI = async (prompt: string): Promise<string> => {
     
     try {
       // Attempt Secondary Neural Core (Groq)
-      console.log("Orchestrator: Engaging Groq Llama-3 Failover...");
       return await runGroq(prompt);
     } catch (groqError: any) {
       console.error("Orchestrator: Dual-Engine failure. Neural blackout.");
