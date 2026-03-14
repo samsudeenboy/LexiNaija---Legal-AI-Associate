@@ -1,5 +1,9 @@
-import React from 'react';
-import { Check, Zap, Building2, Users, ShieldCheck, CreditCard } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, Zap, Building2, Users, ShieldCheck, CreditCard, Loader2 } from 'lucide-react';
+import PaystackPop from '@paystack/inline-js';
+import { useLegalStore } from '../contexts/LegalStoreContext';
+import { useToast } from '../contexts/ToastContext';
+import { supabase } from '../services/supabaseClient';
 
 interface PricingPlan {
   name: string;
@@ -10,6 +14,8 @@ interface PricingPlan {
   cta: string;
   highlighted?: boolean;
   credits: string;
+  amount: number;
+  credits_num?: number;
 }
 
 const PLANS: PricingPlan[] = [
@@ -27,7 +33,9 @@ const PLANS: PricingPlan[] = [
       'PWA Mobile Installation',
       'Local Storage Sync'
     ],
-    cta: 'Start Solo'
+    cta: 'Start Solo',
+    amount: 15000,
+    credits_num: 500
   },
   {
     name: 'Chambers Pro',
@@ -45,7 +53,9 @@ const PLANS: PricingPlan[] = [
       'Priority Email Support',
       'Cloud Backup & Sync'
     ],
-    cta: 'Upgrade Chambers'
+    cta: 'Upgrade Chambers',
+    amount: 45000,
+    credits_num: 2000
   },
   {
     name: 'Enterprise / SAN',
@@ -62,11 +72,54 @@ const PLANS: PricingPlan[] = [
       '24/7 Phone Support',
       'API Access'
     ],
-    cta: 'Contact Sales'
+    cta: 'Contact Sales',
+    amount: 0
   }
 ];
 
 export const Subscription: React.FC = () => {
+  const { showToast } = useToast();
+  const [loading, setLoading] = React.useState<string | null>(null);
+
+  const handlePaystackPayment = async (plan: any) => {
+    if (plan.price === 'Custom') {
+      showToast("Enterprise protocol requires manual consultation.", "info");
+      return;
+    }
+
+    setLoading(plan.name);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        showToast("Authentication required for payment protocols.", "error");
+        return;
+      }
+
+      const paystack = new PaystackPop();
+      paystack.newTransaction({
+        key: (import.meta as any).env.VITE_PAYSTACK_PUBLIC_KEY,
+        email: session.user.email || '',
+        amount: plan.amount * 100, // in kobo
+        currency: 'NGN',
+        metadata: {
+          plan_name: plan.name,
+          credits: plan.credits_num,
+          user_id: session.user.id
+        },
+        onSuccess: (transaction: any) => {
+          showToast(`Protocol success. Transaction ${transaction.reference} verified.`, "success");
+          setLoading(null);
+        },
+        onCancel: () => {
+          showToast("Payment directive cancelled.", "info");
+          setLoading(null);
+        }
+      });
+    } catch (error: any) {
+      showToast(error.message, "error");
+      setLoading(null);
+    }
+  };
   return (
     <div className="bg-gray-50 py-12 px-6 min-h-screen">
       <div className="max-w-7xl mx-auto text-center mb-16">
@@ -117,13 +170,15 @@ export const Subscription: React.FC = () => {
             </div>
 
             <button 
-              className={`w-full py-4 rounded-xl font-bold transition-all ${
+              onClick={() => handlePaystackPayment(plan)}
+              disabled={loading !== null}
+              className={`w-full py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
                 plan.highlighted
                   ? 'bg-legal-900 text-white hover:bg-legal-800 shadow-lg'
                   : 'bg-white border-2 border-legal-900 text-legal-900 hover:bg-legal-50'
-              }`}
+              } disabled:opacity-50`}
             >
-              {plan.cta}
+              {loading === plan.name ? <Loader2 className="animate-spin" size={20} /> : plan.cta}
             </button>
           </div>
         ))}
