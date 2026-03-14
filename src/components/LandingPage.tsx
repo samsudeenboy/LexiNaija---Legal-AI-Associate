@@ -73,13 +73,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               </div>
               
               <h1 className="text-6xl md:text-7xl lg:text-[85px] font-serif font-black text-legal-900 leading-[0.95] tracking-tighter mb-8 animate-in slide-in-from-bottom delay-100">
-                The <span className="text-legal-gold italic">Digital</span><br />
-                Associate <br />
-                For Legal Pros.
+                Stop <span className="text-legal-gold italic">Drafting.</span><br />
+                Start <span className="text-legal-900">Deploying.</span><br />
+                The AI Associate.
               </h1>
               
               <p className="text-lg md:text-xl text-slate-500 font-medium leading-relaxed max-w-lg mb-10 animate-in slide-in-from-bottom delay-200">
-                Automate drafting, accelerate research, and manage your chambers with institutional precision. The definitive AI Operating System for the Nigerian legal landscape.
+                The first agentic OS designed for the Nigerian Bar. Automate complex court processes, perform sovereign legal research, and manage your chambers with institutional grade precision.
               </p>
               
               <div className="flex flex-col sm:flex-row items-center gap-6 animate-in slide-in-from-bottom delay-300">
@@ -101,8 +101,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               
               <div className="relative rounded-[40px] overflow-hidden shadow-2xl border-8 border-white group">
                 <img 
-                  src="https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=1200" 
-                  alt="Legal scale" 
+                  src="file:///C:/Users/USER/.gemini/antigravity/brain/ded6e2a8-4e02-4241-b662-cc14fb24817f/lexinaija_hero_visual_1773488549630.png" 
+                  alt="LexiNaija Sovereign Justice Visual" 
                   className="w-full object-cover aspect-[4/5] group-hover:scale-105 transition-transform duration-1000"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-legal-900/80 via-transparent to-transparent"></div>
@@ -127,8 +127,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               {/* Secondary Floating Image */}
               <div className="absolute -bottom-10 -left-10 w-64 rounded-3xl overflow-hidden shadow-2xl border-4 border-white hidden md:block animate-bounce-slow bg-white">
                 <img 
-                   src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&q=80&w=600" 
-                   alt="Document review" 
+                   src="file:///C:/Users/USER/.gemini/antigravity/brain/ded6e2a8-4e02-4241-b662-cc14fb24817f/digital_lawyer_dashboard_mockup_1773488564501.png" 
+                   alt="LexiNaija Dashboard Workflow" 
                    className="w-full object-cover aspect-video"
                 />
                 <div className="p-4 bg-white border-t border-slate-100">
@@ -171,10 +171,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                 <div className="w-14 h-14 bg-legal-gold/10 text-legal-gold rounded-2xl flex items-center justify-center mb-6">
                   <PenTool size={24} />
                 </div>
-                <h3 className="text-3xl font-serif font-black text-legal-900 mb-4 tracking-tight">AI Drafting Engine</h3>
-                <p className="text-slate-500 leading-relaxed font-medium mb-8">Generate high-fidelity contracts, tenancy agreements, and court processes. LexiNaija adapts strictly to Nigerian forms and precedents instantly.</p>
+                <h3 className="text-3xl font-serif font-black text-legal-900 mb-4 tracking-tight italic">Drafting Protocol Pro</h3>
+                <p className="text-slate-500 leading-relaxed font-medium mb-8">Deploy ultra-high-fidelity court processes, from Originating Summons to complex Interrogatories. Our engine adapts to current NLS standards and High Court rules in real-time.</p>
                 <button className="text-[10px] font-black uppercase tracking-widest text-legal-900 flex items-center gap-2 group/btn">
-                  Explore Capabilities <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
+                  View Drafting Suite <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
                 </button>
               </div>
               <img src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=800" alt="Office" className="hidden md:block absolute right-0 bottom-0 w-1/2 object-cover rounded-tl-[40px] border-t-8 border-l-8 border-white shadow-2xl translate-y-8 translate-x-8 group-hover:translate-y-4 transition-transform duration-700 h-full" />
@@ -185,8 +185,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
               <div className="w-14 h-14 bg-white/10 text-legal-gold rounded-2xl flex items-center justify-center mb-6 border border-white/10">
                 <Scale size={24} />
               </div>
-              <h3 className="text-3xl font-serif font-black mb-4 tracking-tight italic">Deep Law Research</h3>
-              <p className="text-slate-400 leading-relaxed font-medium mb-8">Instant insights into the Evidence Act, CAMA 2020, and Supreme court rulings.</p>
+              <h3 className="text-3xl font-serif font-black mb-4 tracking-tight italic">Sovereign Research</h3>
+              <p className="text-slate-400 leading-relaxed font-medium mb-8">Perform nuanced research across the Evidence Act 2011, CAMA 2020, and a deep repository of Supreme Court Rulings. Find the winning ratio instantly.</p>
               <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-legal-gold opacity-20 blur-[50px]"></div>
             </div>
 
@@ -197,8 +197,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                 <div className="w-14 h-14 bg-white text-legal-900 rounded-2xl flex items-center justify-center mb-6 shadow-xl">
                   <CheckCircle2 size={24} />
                 </div>
-                <h3 className="text-3xl font-serif font-black text-legal-900 mb-4 tracking-tight">Conflict Detection</h3>
-                <p className="text-legal-900/70 font-bold leading-relaxed">Automated scan of adverse parties.</p>
+                <h3 className="text-3xl font-serif font-black text-legal-900 mb-4 tracking-tight italic">Conflict Shield</h3>
+                <p className="text-legal-900/70 font-bold leading-relaxed">Instant scan across adverse parties to protect your firm's professional integrity.</p>
               </div>
             </div>
 
@@ -227,6 +227,57 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                    </div>
                 </div>
              </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trust & Security Section */}
+      <section className="py-32 px-6 bg-slate-900 text-white overflow-hidden relative">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <div>
+              <span className="text-[10px] font-black text-legal-gold uppercase tracking-[.3em] mb-6 inline-block">Sovereign Compliance</span>
+              <h2 className="text-4xl md:text-6xl font-serif font-black mb-8 leading-tight italic">Institutional Grade Security for the Nigerian Bar.</h2>
+              
+              <div className="space-y-8">
+                <div className="flex gap-6">
+                   <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                      <ShieldCheck className="text-legal-gold" />
+                   </div>
+                   <div>
+                      <h4 className="text-xl font-bold mb-2">Immutable Audit Integrity</h4>
+                      <p className="text-slate-400 text-sm leading-relaxed">Cryptographically signed logs compliant with Section 84 of the Evidence Act 2011 for judicial admissibility.</p>
+                   </div>
+                </div>
+                <div className="flex gap-6">
+                   <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                      <Archive className="text-legal-gold" />
+                   </div>
+                   <div>
+                      <h4 className="text-xl font-bold mb-2">SCUML Reporting Readiness</h4>
+                      <p className="text-slate-400 text-sm leading-relaxed">Automated tracking of high-value transactions to simplify your AML/KYC compliance obligations.</p>
+                   </div>
+                </div>
+                <div className="flex gap-6">
+                   <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                      <Zap className="text-legal-gold" />
+                   </div>
+                   <div>
+                      <h4 className="text-xl font-bold mb-2">Agentic Legal Reasoning</h4>
+                      <p className="text-slate-400 text-sm leading-relaxed">Go beyond simple chatbots. Our digital associates perform autonomous cross-referencing against CAMA 2020 and Supreme Court precedents.</p>
+                   </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="relative">
+               <div className="absolute inset-0 bg-legal-gold/20 blur-[120px]"></div>
+               <img 
+                 src="file:///C:/Users/USER/.gemini/antigravity/brain/ded6e2a8-4e02-4241-b662-cc14fb24817f/secure_legal_vault_abstract_1773488579668.png" 
+                 alt="LexiNaija Secure Vault" 
+                 className="relative z-10 rounded-[40px] border border-white/10 shadow-3xl"
+               />
+            </div>
           </div>
         </div>
       </section>
