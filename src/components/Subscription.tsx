@@ -20,59 +20,59 @@ interface PricingPlan {
 
 const PLANS: PricingPlan[] = [
   {
-    name: 'Solo Practitioner',
-    price: '₦15,000',
+    name: 'Solo Practice',
+    price: '₦5,000',
     period: '/month',
-    description: 'Perfect for independent lawyers starting their digital practice.',
+    description: 'Perfect for new wigs and independent practitioners.',
     credits: '500 AI Credits',
     features: [
       'Single User Access',
       'Unlimited Case Files',
-      'Smart Contract Drafter',
+      '5 AI Drafts Per Month',
       'Basic Legal Research',
-      'PWA Mobile Installation',
+      'Cause List Generation',
       'Local Storage Sync'
     ],
     cta: 'Start Solo',
-    amount: 15000,
+    amount: 5000,
     credits_num: 500
   },
   {
-    name: 'Chambers Pro',
-    price: '₦45,000',
+    name: 'Professional',
+    price: '₦15,000',
     period: '/month',
-    description: 'Designed for small to medium law firms building an empire.',
-    credits: '2,000 AI Credits',
+    description: 'The standard for growing firms and active practitioners.',
+    credits: 'Unlimited AI Usage',
     highlighted: true,
     features: [
       'Up to 5 User Accounts',
-      'Real-time Collaboration',
-      'Advanced IRAC Brief Generator',
-      'Full Precedents Library',
-      'Custom Letterhead Invoicing',
+      'Unlimited AI Drafting',
+      'Deep Research Suite',
+      'Bailiff & Process Tracker',
+      'Corporate Filing Automation',
       'Priority Email Support',
       'Cloud Backup & Sync'
     ],
-    cta: 'Upgrade Chambers',
-    amount: 45000,
-    credits_num: 2000
+    cta: 'Upgrade Professional',
+    amount: 15000,
+    credits_num: 999999 // Representing unlimited
   },
   {
-    name: 'Enterprise / SAN',
-    price: 'Custom',
-    period: '',
-    description: 'Scalable solutions for large firms and Senior Advocates.',
-    credits: 'Unlimited AI Usage',
+    name: 'Firm/Enterprise',
+    price: '₦100,000+',
+    period: '/month',
+    description: 'Scalable solutions for SAN chambers and large institutions.',
+    credits: 'Institutional Grade',
     features: [
       'Unlimited User Accounts',
-      'White-label Brand Portal',
-      'Dedicated Account Manager',
-      'On-premise AI Integration',
-      'Custom Document Automation',
-      '24/7 Phone Support',
-      'API Access'
+      'Multi-user Case Sync',
+      'Custom Precedent Library',
+      'Immutable Compliance Audit',
+      'Dedicated Account Liaison',
+      'High-Concurrency Architecture',
+      '24/7 Phone Support'
     ],
-    cta: 'Contact Sales',
+    cta: 'Consult Sales',
     amount: 0
   }
 ];

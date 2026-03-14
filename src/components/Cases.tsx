@@ -5,7 +5,7 @@ import { Case, BillableItem } from '../types';
 import { ConfirmModal } from './ConfirmModal';
 
 export const Cases: React.FC = () => {
-  const { cases, clients, addCase, updateCase, deleteCase, addBillableItem } = useLegalStore();
+  const { cases, clients, addCase, updateCase, deleteCase, addBillableItem, loadMoreCases, hasMoreCases, isLoadingMore } = useLegalStore();
   const [showModal, setShowModal] = useState(false);
   const [showFeeModal, setShowFeeModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -240,6 +240,23 @@ export const Cases: React.FC = () => {
             <p className="text-xl font-serif font-black text-slate-400 italic">No Matter Files Located.</p>
             {searchQuery && <button onClick={() => setSearchQuery('')} className="text-[10px] font-black uppercase tracking-widest text-legal-gold mt-4 hover:opacity-80 transition-opacity">Clear Search Filters</button>}
           </div>
+        )}
+
+        {hasMoreCases && !searchQuery && (
+            <div className="flex justify-center py-12">
+                <button 
+                    onClick={loadMoreCases}
+                    disabled={isLoadingMore}
+                    className="group flex flex-col items-center gap-4 text-slate-400 hover:text-legal-900 transition-all"
+                >
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border border-slate-100 bg-white shadow-sm group-hover:shadow-md group-hover:border-legal-gold transition-all ${isLoadingMore ? 'animate-spin' : ''}`}>
+                        <Plus size={20} className={isLoadingMore ? 'opacity-20' : ''} />
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">
+                        {isLoadingMore ? 'Accessing Archive...' : 'Load More Matters'}
+                    </span>
+                </button>
+            </div>
         )}
       </div>
 

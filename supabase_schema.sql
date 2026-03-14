@@ -5,6 +5,7 @@ CREATE TABLE profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   full_name TEXT,
   firm_name TEXT,
+  firm_id UUID DEFAULT gen_random_uuid(), -- Unified identifier for Enterprise firms
   address TEXT,
   phone TEXT,
   solicitor_name TEXT,
@@ -22,6 +23,7 @@ CREATE TABLE profiles (
 CREATE TABLE clients (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  firm_id UUID,
   name TEXT NOT NULL,
   type TEXT CHECK (type IN ('Individual', 'Corporate')),
   email TEXT,
@@ -34,6 +36,7 @@ CREATE TABLE clients (
 CREATE TABLE cases (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  firm_id UUID, -- Cascading firm identifier for Enterprise scaling
   client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
   title TEXT NOT NULL,
   suit_number TEXT,
@@ -51,6 +54,7 @@ CREATE TABLE documents (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   case_id UUID REFERENCES cases(id) ON DELETE CASCADE,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  firm_id UUID,
   title TEXT NOT NULL,
   content TEXT,
   type TEXT CHECK (type IN ('Draft', 'Research', 'Summary')),
@@ -82,6 +86,7 @@ CREATE TABLE billable_items (
 CREATE TABLE tasks (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
+  firm_id UUID,
   case_id UUID REFERENCES cases(id) ON DELETE SET NULL,
   title TEXT NOT NULL,
   due_date TIMESTAMP WITH TIME ZONE,
@@ -113,17 +118,38 @@ ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE evidence ENABLE ROW LEVEL SECURITY;
 ALTER TABLE document_versions ENABLE ROW LEVEL SECURITY;
 
--- Policies (Users only see their own data)
+-- RLS Policies (Supporting Solo + Enterprise Multi-user)
 CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
 
-CREATE POLICY "Users can manage own clients" ON clients FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage own cases" ON cases FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage own documents" ON documents FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage own tasks" ON tasks FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage own evidence" ON evidence FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage own versions" ON document_versions FOR ALL USING (
-  EXISTS (SELECT 1 FROM documents WHERE documents.id = document_id AND documents.user_id = auth.uid())
+-- Multi-user Firm Access logic: Users can view data if they created it OR if they share the same firm_id in Enterprise mode
+CREATE POLICY "Multi-user client access" ON clients FOR ALL USING (
+  auth.uid() = user_id OR 
+  (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.is_enterprise = TRUE AND p.firm_id = clients.firm_id))
+);
+
+CREATE POLICY "Multi-user case access" ON cases FOR ALL USING (
+  auth.uid() = user_id OR 
+  (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.is_enterprise = TRUE AND p.firm_id = cases.firm_id))
+);
+
+CREATE POLICY "Multi-user document access" ON documents FOR ALL USING (
+  auth.uid() = user_id OR 
+  (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.is_enterprise = TRUE AND p.firm_id = documents.firm_id))
+);
+
+CREATE POLICY "Multi-user task access" ON tasks FOR ALL USING (
+  auth.uid() = user_id OR 
+  (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.is_enterprise = TRUE AND p.firm_id = tasks.firm_id))
+);
+
+CREATE POLICY "Multi-user evidence access" ON evidence FOR ALL USING (
+  auth.uid() = user_id OR 
+  (EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.is_enterprise = TRUE AND p.firm_id = evidence.firm_id))
+);
+
+CREATE POLICY "Multi-user version access" ON document_versions FOR ALL USING (
+  EXISTS (SELECT 1 FROM documents d WHERE d.id = document_id AND (d.user_id = auth.uid() OR EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.is_enterprise = TRUE AND p.firm_id = d.firm_id)))
 );
 -- 10. Hearings (Full Cause List History)
 CREATE TABLE hearings (
@@ -209,5 +235,21 @@ CREATE TABLE firm_precedents (
 );
 
 ALTER TABLE firm_precedents ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can manage own precedents" ON firm_precedents FOR ALL USING (auth.uid() = user_id);
 -- Note: AUDIT LOGS should ideally be INSERT ONLY for users via triggers/functions, preventing deletion of history.
+
+-- 16. Performance Indexing (Scaling for 5000+ Users)
+CREATE INDEX idx_clients_user_id ON clients(user_id);
+CREATE INDEX idx_cases_user_id ON cases(user_id);
+CREATE INDEX idx_cases_client_id ON cases(client_id);
+CREATE INDEX idx_documents_case_id ON documents(case_id);
+CREATE INDEX idx_documents_user_id ON documents(user_id);
+CREATE INDEX idx_tasks_user_id ON tasks(user_id);
+CREATE INDEX idx_tasks_case_id ON tasks(case_id);
+CREATE INDEX idx_evidence_case_id ON evidence(case_id);
+CREATE INDEX idx_evidence_user_id ON evidence(user_id);
+CREATE INDEX idx_hearings_case_id ON hearings(case_id);
+CREATE INDEX idx_hearings_user_id ON hearings(user_id);
+CREATE INDEX idx_audit_logs_user_id ON audit_logs(user_id);
+CREATE INDEX idx_audit_logs_timestamp ON audit_logs(timestamp DESC);
+CREATE INDEX idx_invoices_client_id ON invoices(client_id);
+CREATE INDEX idx_invoices_case_id ON invoices(case_id);

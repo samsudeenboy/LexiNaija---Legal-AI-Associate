@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useLegalStore } from '../contexts/LegalStoreContext';
-import { Save, Building, Mail, Phone, User, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Save, Building, Mail, Phone, User, ShieldCheck, RefreshCw, Upload } from 'lucide-react';
 
 export const Settings: React.FC = () => {
   const { firmProfile, updateFirmProfile, creditsTotal, creditsUsed, addCredits } = useLegalStore();
@@ -83,14 +83,44 @@ export const Settings: React.FC = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                 <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 ml-6">Firm Insignia (Logo URL)</label>
+                    <div className="relative group">
+                        <Upload className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-legal-gold transition-colors" size={18} />
+                        <input 
+                          type="text" 
+                          value={formData.firmLogoUrl || ''}
+                          onChange={e => setFormData({...formData, firmLogoUrl: e.target.value})}
+                          placeholder="https://..."
+                          className="w-full pl-16 pr-6 py-5 bg-slate-50 border border-slate-100 rounded-[20px] font-bold text-legal-900 focus:ring-4 focus:ring-legal-gold/5 outline-none transition-all shadow-inner"
+                        />
+                    </div>
+                </div>
+                <div className="flex items-center gap-6 bg-slate-50 p-6 rounded-[24px] border border-slate-100">
+                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm">
+                        <ShieldCheck className={formData.isEnterprise ? "text-legal-gold" : "text-slate-200"} size={24} />
+                    </div>
+                    <div>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Institutional Mode</p>
+                        <div className="flex items-center gap-3 mt-1 cursor-pointer" onClick={() => setFormData({...formData, isEnterprise: !formData.isEnterprise})}>
+                            <div className={`w-10 h-5 rounded-full transition-all relative ${formData.isEnterprise ? 'bg-legal-900' : 'bg-slate-200'}`}>
+                                <div className={`absolute top-1 w-3 h-3 bg-white rounded-full transition-all ${formData.isEnterprise ? 'left-6' : 'left-1'}`}></div>
+                            </div>
+                            <span className="text-xs font-black text-legal-900 uppercase">Enterprise Activation</span>
+                        </div>
+                    </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 ml-6">Digital Correspondence</label>
                     <div className="relative group">
                         <Mail className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-legal-gold transition-colors" size={18} />
                         <input 
-                        type="email" 
-                        value={formData.email}
-                        onChange={e => setFormData({...formData, email: e.target.value})}
-                        className="w-full pl-16 pr-6 py-5 bg-slate-50 border border-slate-100 rounded-[20px] font-bold text-legal-900 focus:ring-4 focus:ring-legal-gold/5 outline-none transition-all shadow-inner"
+                          type="email" 
+                          value={formData.email}
+                          onChange={e => setFormData({...formData, email: e.target.value})}
+                          className="w-full pl-16 pr-6 py-5 bg-slate-50 border border-slate-100 rounded-[20px] font-bold text-legal-900 focus:ring-4 focus:ring-legal-gold/5 outline-none transition-all shadow-inner"
                         />
                     </div>
                 </div>
@@ -99,10 +129,10 @@ export const Settings: React.FC = () => {
                     <div className="relative group">
                         <Phone className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-legal-gold transition-colors" size={18} />
                         <input 
-                        type="text" 
-                        value={formData.phone}
-                        onChange={e => setFormData({...formData, phone: e.target.value})}
-                        className="w-full pl-16 pr-6 py-5 bg-slate-50 border border-slate-100 rounded-[20px] font-bold text-legal-900 focus:ring-4 focus:ring-legal-gold/5 outline-none transition-all shadow-inner"
+                          type="text" 
+                          value={formData.phone}
+                          onChange={e => setFormData({...formData, phone: e.target.value})}
+                          className="w-full pl-16 pr-6 py-5 bg-slate-50 border border-slate-100 rounded-[20px] font-bold text-legal-900 focus:ring-4 focus:ring-legal-gold/5 outline-none transition-all shadow-inner"
                         />
                     </div>
                 </div>

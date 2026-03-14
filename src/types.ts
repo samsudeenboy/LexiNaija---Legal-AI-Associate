@@ -163,6 +163,9 @@ export interface FirmProfile {
   email: string;
   phone: string;
   solicitorName: string;
+  firmLogoUrl?: string;
+  firmId?: string; // Unified identifier for Enterprise collaboration
+  isEnterprise?: boolean;
 }
 
 export interface LegalAnalytics {

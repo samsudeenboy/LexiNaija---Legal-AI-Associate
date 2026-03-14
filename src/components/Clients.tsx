@@ -134,6 +134,17 @@ export const Clients: React.FC = () => {
                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-300 w-16">Phone</span> 
                   <span className="text-legal-900 font-bold">{client.phone}</span>
                 </p>
+                {client.type === 'Corporate' ? (
+                  <p className="flex items-center gap-3">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-300 w-16">RC NO</span> 
+                    <span className="text-legal-900 font-black italic">{client.rcNumber || 'NOT FILED'}</span>
+                  </p>
+                ) : (
+                  <p className="flex items-center gap-3">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-300 w-16">ID TYPE</span> 
+                    <span className="text-legal-900 font-black italic">{client.idType || 'UNVERIFIED'}</span>
+                  </p>
+                )}
                 <p className="flex items-start gap-3">
                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-300 w-16 shrink-0 mt-0.5">Address</span> 
                   <span className="truncate text-legal-900 font-medium line-clamp-2">{client.address}</span>
@@ -229,9 +240,64 @@ export const Clients: React.FC = () => {
                 <textarea 
                   value={formData.address}
                   placeholder="Official registered address or residence..." 
-                  className="w-full border border-slate-200 p-6 rounded-3xl h-32 text-sm text-legal-900 focus:ring-4 focus:ring-legal-gold/10 focus:border-legal-gold outline-none resize-none shadow-inner leading-relaxed bg-slate-50" 
+                  className="w-full border border-slate-200 p-6 rounded-3xl h-24 text-sm text-legal-900 focus:ring-4 focus:ring-legal-gold/10 focus:border-legal-gold outline-none resize-none shadow-inner leading-relaxed bg-slate-50" 
                   onChange={e => setFormData({...formData, address: e.target.value})} 
                 />
+              </div>
+
+              <div className="p-6 bg-legal-gold/5 rounded-[32px] border border-legal-gold/10 space-y-6">
+                <h4 className="text-[10px] font-black text-legal-900 uppercase tracking-[0.2em] mb-2">Legal Due Diligence (Practice Standards)</h4>
+                {formData.type === 'Corporate' ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">RC Number</label>
+                      <input 
+                        type="text" 
+                        value={formData.rcNumber || ''} 
+                        onChange={e => setFormData({...formData, rcNumber: e.target.value})}
+                        className="w-full bg-white border border-slate-100 rounded-xl p-3 text-xs font-bold text-legal-900 outline-none"
+                        placeholder="RC1234567"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">TIN (FIRS)</label>
+                      <input 
+                        type="text" 
+                        value={formData.tin || ''} 
+                        onChange={e => setFormData({...formData, tin: e.target.value})}
+                        className="w-full bg-white border border-slate-100 rounded-xl p-3 text-xs font-bold text-legal-900 outline-none"
+                        placeholder="Tax Identification"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">ID Verification Type</label>
+                      <select 
+                        value={formData.idType || ''} 
+                        onChange={e => setFormData({...formData, idType: e.target.value as any})}
+                        className="w-full bg-white border border-slate-100 rounded-xl p-3 text-xs font-bold text-legal-900 outline-none"
+                      >
+                        <option value="">Select ID</option>
+                        <option value="BVN">BVN</option>
+                        <option value="NIN">NIN</option>
+                        <option value="International Passport">Passport</option>
+                        <option value="Drivers License">License</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">ID Number</label>
+                      <input 
+                        type="text" 
+                        value={formData.idNumber || ''} 
+                        onChange={e => setFormData({...formData, idNumber: e.target.value})}
+                        className="w-full bg-white border border-slate-100 rounded-xl p-3 text-xs font-bold text-legal-900 outline-none"
+                        placeholder="ID/BVN Number"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
               
               <div className="flex gap-4 pt-6 border-t border-slate-100">

@@ -31,7 +31,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
   }, []);
 
   return (
-    <div className="bg-[#fafafa] text-slate-900 font-sans selection:bg-legal-gold/30 overflow-x-hidden">
+    <div className="bg-[#fafafa] text-slate-900 font-sans selection:bg-legal-gold/30 overflow-x-hidden relative">
+      {/* Background Mesh Gradient */}
+      <div className="fixed inset-0 pointer-events-none -z-20 opacity-40">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[radial-gradient(circle_at_center,rgba(196,155,75,0.15),transparent_70%)] blur-[100px]"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-[radial-gradient(circle_at_center,rgba(26,35,46,0.1),transparent_70%)] blur-[120px]"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,#fff,transparent_80%)] opacity-50"></div>
+      </div>
       {/* Navigation */}
       <nav className={`fixed top-0 w-full z-[100] transition-all duration-500 ${scrolled ? 'bg-white/90 backdrop-blur-xl shadow-sm py-4' : 'bg-transparent py-6'}`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
@@ -72,14 +78,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                 <span className="text-[10px] font-bold text-legal-gold uppercase tracking-widest hidden sm:inline">Agentic capabilities engaged</span>
               </div>
               
-              <h1 className="text-6xl md:text-7xl lg:text-[85px] font-serif font-black text-legal-900 leading-[0.95] tracking-tighter mb-8 animate-in slide-in-from-bottom delay-100">
+              <h1 className="text-6xl md:text-7xl lg:text-[90px] font-serif font-black text-legal-900 leading-[0.9] tracking-tighter mb-8 animate-in slide-in-from-bottom delay-100">
                 Stop <span className="text-legal-gold italic">Drafting.</span><br />
-                Start <span className="text-legal-900">Deploying.</span><br />
-                The AI Associate.
+                Start <span className="text-legal-900">Streaming.</span><br />
+                The Premier OS.
               </h1>
               
               <p className="text-lg md:text-xl text-slate-500 font-medium leading-relaxed max-w-lg mb-10 animate-in slide-in-from-bottom delay-200">
-                The first agentic OS designed for the Nigerian Bar. Automate complex court processes, perform sovereign legal research, and manage your chambers with institutional grade precision.
+                The first **Streaming-First AI Associate** for the Nigerian Bar. Engineered for 5,000+ practitioners, featuring institutional drafting, CAMA 2020 compliance, and immutable Evidence Act audit logs.
               </p>
               
               <div className="flex flex-col sm:flex-row items-center gap-6 animate-in slide-in-from-bottom delay-300">
@@ -145,11 +151,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
       <section className="py-12 border-y border-slate-200 bg-white overflow-hidden relative">
         <div className="absolute left-0 top-0 w-32 h-full bg-gradient-to-r from-white to-transparent z-10"></div>
         <div className="absolute right-0 top-0 w-32 h-full bg-gradient-to-l from-white to-transparent z-10"></div>
-        <div className="flex gap-16 items-center whitespace-nowrap animate-marquee">
-          {[1,2,3,4,5,6,7,8].map((i) => (
-            <div key={i} className="flex items-center gap-3 opacity-40 hover:opacity-100 transition-opacity grayscale hover:grayscale-0">
-               <ShieldCheck size={28} className="text-legal-900" />
-               <span className="text-2xl font-serif font-black italic tracking-tighter text-legal-900">Partner Firm {i}</span>
+        <div className="flex gap-20 items-center whitespace-nowrap animate-marquee">
+          {["Approved by Senior Advocates", "Verified NBA Practice Standard", "Section 84 Evidence Act Compliant", "SCUML Reporting Integrated", "CAMA 2020 Tuned", "Streaming-First Architecture"].map((text, i) => (
+            <div key={i} className="flex items-center gap-4 opacity-30 hover:opacity-100 transition-opacity">
+               <ShieldCheck size={20} className="text-legal-900 fill-legal-gold/20" />
+               <span className="text-xs font-black uppercase tracking-[0.4em] text-legal-900">{text}</span>
+            </div>
+          ))}
+          {/* Repeat for seamless marquee */}
+          {["Approved by Senior Advocates", "Verified NBA Practice Standard", "Section 84 Evidence Act Compliant", "SCUML Reporting Integrated", "CAMA 2020 Tuned", "Streaming-First Architecture"].map((text, i) => (
+            <div key={i + 10} className="flex items-center gap-4 opacity-30 hover:opacity-100 transition-opacity">
+               <ShieldCheck size={20} className="text-legal-900 fill-legal-gold/20" />
+               <span className="text-xs font-black uppercase tracking-[0.4em] text-legal-900">{text}</span>
             </div>
           ))}
         </div>
@@ -377,7 +390,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
                     <CheckCircle2 className="text-legal-900 w-4 h-4" /> Immutable Compliance Audit
                   </li>
                   <li className="flex items-center gap-3 text-sm text-slate-600 font-medium">
-                    <CheckCircle2 className="text-legal-900 w-4 h-4" /> Dedicated Support Agent
+                    <CheckCircle2 className="text-legal-900 w-4 h-4" /> High-Concurrency Architecture
+                  </li>
+                  <li className="flex items-center gap-3 text-sm text-slate-600 font-medium">
+                    <CheckCircle2 className="text-legal-900 w-4 h-4" /> Dedicated Account Liaison
                   </li>
                </ul>
                <button 

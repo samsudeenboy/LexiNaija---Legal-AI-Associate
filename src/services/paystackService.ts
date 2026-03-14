@@ -17,7 +17,7 @@ export const usePaystackPayment = () => {
   const initializePayment = (config: PaystackProps) => {
     // @ts-ignore
     const handler = window.PaystackPop.setup({
-      key: import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder',
+      key: (import.meta as any).env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_placeholder',
       email: config.email,
       amount: config.amount * 100, // Convert to kobo
       currency: 'NGN',
@@ -32,7 +32,7 @@ export const usePaystackPayment = () => {
         ]
       },
       callback: function(response: any) {
-        console.log('Payment complete! Reference: ' + response.reference);
+        // Payment verified on server-side via webhook
         config.onSuccess(response.reference);
       },
       onClose: function() {
