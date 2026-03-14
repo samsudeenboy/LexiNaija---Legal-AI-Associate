@@ -9,6 +9,7 @@ import { useLegalStore } from '../contexts/LegalStoreContext';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useToast } from '../contexts/ToastContext';
+import { AppView } from '../types';
 
 import { AiDisclaimer } from './AiDisclaimer';
 
@@ -16,7 +17,12 @@ type Step = 'type' | 'parties' | 'terms' | 'preview';
 
 export const Drafter: React.FC = () => {
   const { showToast } = useToast();
-  const { cases, clients, updateCaseDocument, saveDocumentToCase, creditsTotal, creditsUsed, consumeCredits, activeSuggestion, setActiveSuggestion, knowledgeItems } = useLegalStore();
+  const { 
+    cases, clients, updateCaseDocument, saveDocumentToCase, 
+    creditsTotal, creditsUsed, consumeCredits, 
+    activeSuggestion, setActiveSuggestion, knowledgeItems,
+    setView, setActiveDoc
+  } = useLegalStore();
   const [currentStep, setCurrentStep] = useState<Step>('type');
   const [params, setParams] = useState<ContractParams>({
     type: 'Tenancy Agreement',
@@ -25,6 +31,7 @@ export const Drafter: React.FC = () => {
     jurisdiction: 'Lagos State',
     keyTerms: ''
   });
+  const [lastSavedInfo, setLastSavedInfo] = useState<{caseId: string, docId: string} | null>(null);
   const [generatedDraft, setGeneratedDraft] = useState('');
   const [isDrafting, setIsDrafting] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
@@ -132,16 +139,25 @@ export const Drafter: React.FC = () => {
 
   const handleSaveToCase = () => {
     if (selectedCase && generatedDraft && saveTitle) {
+        const newDocId = Date.now().toString();
         saveDocumentToCase(selectedCase, {
-            id: Date.now().toString(),
+            id: newDocId,
             title: saveTitle,
             content: generatedDraft,
             type: 'Draft',
             createdAt: new Date(),
             status: 'Draft'
         } as SavedDocument);
+        setLastSavedInfo({ caseId: selectedCase, docId: newDocId });
         setShowSaveModal(false);
         showToast("Instrument archived to case file.", "success");
+    }
+  };
+
+  const handleOpenInEditor = () => {
+    if (lastSavedInfo) {
+      setActiveDoc(lastSavedInfo);
+      setView(AppView.EDITOR);
     }
   };
 
@@ -450,9 +466,18 @@ export const Drafter: React.FC = () => {
                                 <button onClick={() => { navigator.clipboard.writeText(generatedDraft); setCopySuccess(true); setTimeout(() => setCopySuccess(false), 2000); }} className="p-4 rounded-2xl bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors" title="Copy">
                                     {copySuccess ? <CheckCircle2 size={20} className="text-green-500"/> : <Copy size={20} />}
                                 </button>
-                                <button onClick={() => { setSaveTitle(`${params.type} - Draft`); setShowSaveModal(true); }} className="px-8 py-4 rounded-2xl bg-legal-900 text-white font-black uppercase tracking-widest text-[10px] hover:bg-legal-gold hover:text-legal-900 transition-all flex items-center gap-2 shadow-xl">
-                                    <Save size={16} /> Archive to Matter
-                                </button>
+                                {lastSavedInfo ? (
+                                    <button 
+                                        onClick={handleOpenInEditor} 
+                                        className="px-8 py-4 rounded-2xl bg-legal-gold text-white font-black uppercase tracking-widest text-[10px] hover:bg-legal-900 transition-all flex items-center gap-2 shadow-xl shadow-legal-gold/20"
+                                    >
+                                        <Sparkles size={16} /> Open in Pro Editor
+                                    </button>
+                                ) : (
+                                    <button onClick={() => { setSaveTitle(`${params.type} - Draft`); setShowSaveModal(true); }} className="px-8 py-4 rounded-2xl bg-legal-900 text-white font-black uppercase tracking-widest text-[10px] hover:bg-legal-gold hover:text-legal-900 transition-all flex items-center gap-2 shadow-xl">
+                                        <Save size={16} /> Archive to Matter
+                                    </button>
+                                )}
                             </div>
                         </div>
 

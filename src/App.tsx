@@ -30,11 +30,11 @@ const ClientPortal = lazy(() => import('./components/ClientPortal').then(m => ({
 const Entertainment = lazy(() => import('./components/Entertainment').then(m => ({ default: m.Entertainment })));
 const FeeCalculator = lazy(() => import('./components/FeeCalculator').then(m => ({ default: m.FeeCalculator })));
 import { AppView } from './types';
-import { LegalStoreProvider } from './contexts/LegalStoreContext';
+import { LegalStoreProvider, useLegalStore } from './contexts/LegalStoreContext';
 import { ToastProvider } from './contexts/ToastContext';
 
-function App() {
-  const [currentView, setCurrentView] = useState<AppView>(AppView.LANDING);
+function AppContent() {
+  const { currentView, setView } = useLegalStore();
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
   useEffect(() => {
@@ -51,11 +51,11 @@ function App() {
   const renderView = () => {
     switch (currentView) {
       case AppView.LANDING:
-        return <LandingPage onGetStarted={() => setCurrentView(AppView.AUTH)} />;
+        return <LandingPage onGetStarted={() => setView(AppView.AUTH)} />;
       case AppView.AUTH:
-        return <Auth onAuthSuccess={() => setCurrentView(AppView.DASHBOARD)} />;
+        return <Auth onAuthSuccess={() => setView(AppView.DASHBOARD)} />;
       case AppView.DASHBOARD:
-        return <Dashboard onNavigate={setCurrentView} />;
+        return <Dashboard onNavigate={setView} />;
       case AppView.DOCKET:
         return <Docket />;
       case AppView.RESEARCH:
@@ -79,7 +79,7 @@ function App() {
       case AppView.CALCULATORS:
         return <Calculators />;
       case AppView.PRECEDENTS:
-        return <Precedents onNavigate={setCurrentView} />;
+        return <Precedents onNavigate={setView} />;
       case AppView.PRACTICE_GUIDE:
         return <PracticeGuide />;
       case AppView.STRATEGY:
@@ -107,26 +107,32 @@ function App() {
       case AppView.PORTAL:
         return <ClientPortal />;
       default:
-        return <Dashboard onNavigate={setCurrentView} />;
+        return <Dashboard onNavigate={setView} />;
     }
   };
 
   return (
+    <div className="flex h-screen w-full bg-slate-50 font-sans text-slate-900">
+      {(currentView !== AppView.LANDING && currentView !== AppView.AUTH) && <Sidebar currentView={currentView} setView={setView} />}
+      <main className={`flex-1 ${(currentView !== AppView.LANDING && currentView !== AppView.AUTH) ? 'ml-64' : ''} overflow-auto scrollbar-hide ${currentView === AppView.EDITOR || currentView === AppView.DOCKET || currentView === AppView.EVIDENCE || currentView === AppView.WITNESS || currentView === AppView.BRIEFS || currentView === AppView.CORPORATE ? 'bg-white' : ''}`}>
+        <Suspense fallback={<div className="p-6 text-sm text-gray-600">Loading…</div>}>
+          {renderView()}
+        </Suspense>
+      </main>
+      <CommandPalette 
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onNavigate={(view) => setView(view)}
+      />
+    </div>
+  );
+}
+
+function App() {
+  return (
     <LegalStoreProvider>
       <ToastProvider>
-        <div className="flex h-screen w-full bg-slate-50 font-sans text-slate-900">
-          {(currentView !== AppView.LANDING && currentView !== AppView.AUTH) && <Sidebar currentView={currentView} setView={setCurrentView} />}
-          <main className={`flex-1 ${(currentView !== AppView.LANDING && currentView !== AppView.AUTH) ? 'ml-64' : ''} overflow-auto scrollbar-hide ${currentView === AppView.EDITOR || currentView === AppView.DOCKET || currentView === AppView.EVIDENCE || currentView === AppView.WITNESS || currentView === AppView.BRIEFS || currentView === AppView.CORPORATE ? 'bg-white' : ''}`}>
-            <Suspense fallback={<div className="p-6 text-sm text-gray-600">Loading…</div>}>
-              {renderView()}
-            </Suspense>
-          </main>
-          <CommandPalette 
-            isOpen={isCommandPaletteOpen}
-            onClose={() => setIsCommandPaletteOpen(false)}
-            onNavigate={(view) => setCurrentView(view)}
-          />
-        </div>
+        <AppContent />
       </ToastProvider>
     </LegalStoreProvider>
   );

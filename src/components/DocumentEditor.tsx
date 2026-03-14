@@ -5,11 +5,12 @@ import {
   FileText, Save, Download, File, Search, ChevronRight, PenTool, Eye, History, RotateCcw,
   Bold, Italic, Underline, Heading, List, ListOrdered, Quote, Code,
   Strikethrough, Subscript, Superscript, Link as LinkIcon, Table as TableIcon,
-  CheckSquare, Minus, Image as ImageIcon, Sparkles, X, Wand2, Columns, Layout
+  CheckSquare, Minus, Image as ImageIcon, Sparkles, X, Wand2, Columns, Layout, Gavel
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import { refineLegalText } from '../services/geminiService';
 import debounce from 'lodash.debounce';
 import { useToast } from '../contexts/ToastContext';
@@ -32,7 +33,7 @@ export const DocumentEditor: React.FC = () => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  const [showVariables, setShowVariables] = useState(false);
+  const [paperMode, setPaperMode] = useState(true);
   const [variables, setVariables] = useState<Record<string, string>>({});
   
   // AI Modal State
@@ -272,8 +273,28 @@ export const DocumentEditor: React.FC = () => {
     setShowAiModal(false);
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!selectedDoc) return;
+    showToast("Preparing document for export...", "info");
+    
+    // If in Paper Mode and preview/split is active, use html2canvas for pixel-perfect export
+    if (paperMode && (previewMode || splitView) && previewRef.current) {
+        const element = previewRef.current.querySelector('.legal-document-form') as HTMLElement;
+        if (element) {
+            const canvas = await html2canvas(element, { scale: 2 });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const imgProps = pdf.getImageProperties(imgData);
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            pdf.save(`${selectedDoc.title.replace(/\s+/g, '_')}.pdf`);
+            showToast("Document exported with institutional formatting.", "success");
+            return;
+        }
+    }
+
+    // Fallback: Standard PDF generation
     const doc = new jsPDF();
     const splitTitle = doc.splitTextToSize(selectedDoc.title, 180);
     const splitContent = doc.splitTextToSize(selectedDoc.content, 180);
@@ -285,6 +306,7 @@ export const DocumentEditor: React.FC = () => {
         doc.text(splitContent[i], 15, y); y += 7;
     }
     doc.save(`${selectedDoc.title.replace(/\s+/g, '_')}.pdf`);
+    showToast("Document exported.", "success");
   };
 
   const handleExportWord = () => {
@@ -427,6 +449,15 @@ export const DocumentEditor: React.FC = () => {
                     <button onClick={handleExportPDF} className="p-2.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all" title="Export PDF"><Download size={18} /></button>
                     <button onClick={handleExportWord} className="p-2.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all" title="Export Word"><FileText size={18} /></button>
                 </div>
+
+                <div className="h-8 w-px bg-gray-100"></div>
+
+                <button 
+                  onClick={() => setPaperMode(!paperMode)}
+                  className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${paperMode ? 'bg-legal-gold text-white shadow-lg' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}
+                >
+                  {paperMode ? 'LEGAL PAPER MODE: ON' : 'LEGAL PAPER MODE: OFF'}
+                </button>
               </div>
             </div>
 
@@ -459,26 +490,41 @@ export const DocumentEditor: React.FC = () => {
                             >
                                 <Sparkles size={14} /> Refine with AI
                             </button>
+                            <button 
+                                onClick={() => { setAiInstruction("Formalize into court-standard language using institutional legalese, ensuring all parties are properly referenced as defined in the header."); handleAiGenerate(); setShowAiModal(true); }}
+                                className="px-4 py-2 rounded-xl bg-legal-900/10 text-legal-900 hover:bg-legal-900 hover:text-white flex items-center gap-2 text-[10px] font-black tracking-widest uppercase transition-all"
+                            >
+                                <Gavel size={14} /> Formalize for Court
+                            </button>
                           </div>
-                          
-                          {previewMode && !splitView ? (
-                            <div className="prose prose-slate prose-lg max-w-none font-serif text-slate-800 flex-1">
+                                                    {previewMode && !splitView ? (
+                            <div className={`prose prose-slate prose-lg max-w-none ${paperMode ? 'legal-document-form shadow-2xl scale-95 origin-top' : 'font-serif text-slate-800 flex-1'}`}>
                                 <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedDoc.content}</ReactMarkdown>
                             </div>
                           ) : (
-                            <textarea
-                                ref={textareaRef}
-                                value={selectedDoc.content}
-                                onChange={(e) => {
-                                    setSelectedDoc({...selectedDoc, content: e.target.value});
-                                    setHasUnsavedChanges(true);
-                                    debouncedSave(selectedDoc.caseId, selectedDoc.docId, selectedDoc.title, e.target.value);
-                                }}
-                                onScroll={handleScroll}
-                                placeholder="Commence drafting procedures..."
-                                className="w-full flex-1 resize-none border-none focus:ring-0 px-0 text-xl leading-[1.8] text-slate-700 font-serif bg-transparent outline-none pb-40"
-                                spellCheck={false}
-                            />
+                            <div className="relative flex-1 flex flex-col">
+                                <textarea
+                                    ref={textareaRef}
+                                    value={selectedDoc.content}
+                                    onChange={(e) => {
+                                        setSelectedDoc({...selectedDoc, content: e.target.value});
+                                        setHasUnsavedChanges(true);
+                                        debouncedSave(selectedDoc.caseId, selectedDoc.docId, selectedDoc.title, e.target.value);
+                                    }}
+                                    onScroll={handleScroll}
+                                    placeholder="Commence drafting procedures..."
+                                    className="w-full flex-1 resize-none border-none focus:ring-0 px-0 text-xl leading-[1.8] text-slate-700 font-serif bg-transparent outline-none pb-40"
+                                    spellCheck={false}
+                                />
+                                {/* Simple Variable Overlay (Visual only, doesn't interfere with typing) */}
+                                <div className="absolute inset-0 pointer-events-none whitespace-pre-wrap break-words text-xl leading-[1.8] text-transparent font-serif py-1 px-0">
+                                    {selectedDoc.content.split(/(\[.*?\])/g).map((part, i) => (
+                                        part.startsWith('[') && part.endsWith(']') ? 
+                                            <span key={i} className="bg-legal-gold/10 text-legal-gold border-b-2 border-legal-gold/30 rounded px-1">{part}</span> : 
+                                            <span key={i}>{part}</span>
+                                    ))}
+                                </div>
+                            </div>
                           )}
                       </div>
 
@@ -500,15 +546,11 @@ export const DocumentEditor: React.FC = () => {
                         </div>
                       )}
                   </div>
-                </div>
-
-                {splitView && (
-                    <div ref={previewRef} className="w-1/2 h-full overflow-y-auto bg-slate-50/50 py-12 px-10 scrollbar-hide border-l border-gray-100">
-                        <div className="max-w-3xl mx-auto min-h-full flex flex-col">
-                            <div className="prose prose-slate prose-lg max-w-none font-serif text-slate-800 pb-40">
-                                <h1 className="text-5xl font-black italic tracking-tighter text-legal-900 mb-10">{selectedDoc.title}</h1>
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedDoc.content}</ReactMarkdown>
-                            </div>
+                </div>                 {splitView && (
+                    <div ref={previewRef} className="w-1/2 h-full overflow-y-auto bg-slate-200/50 py-12 px-10 scrollbar-hide border-l border-gray-100 flex justify-center">
+                        <div className={`prose prose-slate prose-lg max-w-none h-fit ${paperMode ? 'legal-document-form shadow-2xl mb-40' : 'bg-white p-12 shadow-sm font-serif text-slate-800'}`}>
+                            {!paperMode && <h1 className="text-5xl font-black italic tracking-tighter text-legal-900 mb-10">{selectedDoc.title}</h1>}
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{selectedDoc.content}</ReactMarkdown>
                         </div>
                     </div>
                 )}

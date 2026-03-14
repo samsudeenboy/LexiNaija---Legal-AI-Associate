@@ -42,6 +42,8 @@ interface LegalStoreContextType {
   knowledgeItems: KnowledgeItem[];
   addKnowledgeItem: (item: KnowledgeItem) => void;
   deleteKnowledgeItem: (id: string) => void;
+  currentView: AppView;
+  setView: (view: AppView) => void;
 }
 
 const LegalStoreContext = createContext<LegalStoreContextType | undefined>(undefined);
@@ -181,6 +183,7 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [activeCaseId, setActiveCaseId] = useState<string | null>(null);
   const [activeSuggestion, setActiveSuggestion] = useState<Suggestion | null>(null);
+  const [currentView, setView] = useState<AppView>(AppView.LANDING);
 
   const [knowledgeItems, setKnowledgeItems] = useState<KnowledgeItem[]>(() => {
     try {
@@ -597,7 +600,8 @@ export const LegalStoreProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       auditLog, addAuditLogEntry,
       suggestions,      activeCaseId, setActiveCaseId, dismissSuggestion,
       activeSuggestion, setActiveSuggestion,
-      knowledgeItems, addKnowledgeItem, deleteKnowledgeItem
+      knowledgeItems, addKnowledgeItem, deleteKnowledgeItem,
+      currentView, setView
     }}>
       {children}
     </LegalStoreContext.Provider>

@@ -19,4 +19,55 @@
   .legal-serif {
     font-family: var(--font-serif);
   }
+
+  /* Institutional Legal Document Form */
+  .legal-document-form {
+    font-family: "Times New Roman", Times, serif !important;
+    text-align: justify !important;
+    line-height: 1.5 !important;
+    color: #000 !important;
+    background: white;
+    box-shadow: 0 0 50px rgba(0,0,0,0.1);
+    min-height: 297mm; /* A4 Height */
+    width: 210mm;      /* A4 Width */
+    margin: 0 auto;
+    padding: 25mm 25mm 25mm 30mm; /* Standard Court Margins */
+    position: relative;
+    word-spacing: -0.05em;
+  }
+
+  .legal-document-form h1, 
+  .legal-document-form h2 {
+    text-align: center;
+    text-transform: uppercase;
+    font-weight: bold;
+    margin-bottom: 2rem;
+    letter-spacing: 0.05em;
+  }
+
+  .legal-document-form p {
+    margin-bottom: 1.2rem;
+    text-indent: 0;
+  }
+
+  /* Paragraph Numbering Alignment */
+  .legal-document-form ol {
+    list-style-type: none;
+    counter-reset: item;
+  }
+
+  .legal-document-form ol > li {
+    display: block;
+    position: relative;
+    padding-left: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .legal-document-form ol > li:before {
+    content: counter(item) ". ";
+    counter-increment: item;
+    position: absolute;
+    left: 0;
+    font-weight: bold;
+  }
 }
