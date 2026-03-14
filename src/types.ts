@@ -60,6 +60,7 @@ export interface Client {
   phone: string;
   address: string;
   dateAdded: Date;
+  rcNumber?: string; // Corporate Registration (CAMA 2020)
   retainerRef?: string; // Reference to signed retainer/engagement letter
   conflictCleared?: boolean; // Confirms conflict check was performed
 }

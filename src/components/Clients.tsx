@@ -50,6 +50,7 @@ export const Clients: React.FC = () => {
           email: formData.email,
           phone: formData.phone || '',
           address: formData.address || '',
+          rcNumber: formData.type === 'Corporate' ? formData.rcNumber : undefined,
           dateAdded: new Date()
         });
       }
@@ -134,6 +135,12 @@ export const Clients: React.FC = () => {
                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-300 w-16">Phone</span> 
                   <span className="text-legal-900 font-bold">{client.phone}</span>
                 </p>
+                {client.type === 'Corporate' && (
+                  <p className="flex items-center gap-3">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-slate-300 w-16">RC NO</span> 
+                    <span className="text-legal-900 font-black italic">{client.rcNumber || 'NOT FILED'}</span>
+                  </p>
+                )}
                 <p className="flex items-start gap-3">
                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-300 w-16 shrink-0 mt-0.5">Address</span> 
                   <span className="truncate text-legal-900 font-medium line-clamp-2">{client.address}</span>
@@ -233,6 +240,19 @@ export const Clients: React.FC = () => {
                   onChange={e => setFormData({...formData, address: e.target.value})} 
                 />
               </div>
+
+              {formData.type === 'Corporate' && (
+                <div className="p-6 bg-legal-gold/5 rounded-[32px] border border-legal-gold/10">
+                  <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Corporate RC Number</label>
+                  <input 
+                    type="text" 
+                    value={formData.rcNumber || ''} 
+                    onChange={e => setFormData({...formData, rcNumber: e.target.value})}
+                    className="w-full bg-white border border-slate-100 rounded-xl p-3 text-xs font-bold text-legal-900 outline-none"
+                    placeholder="e.g. RC1234567"
+                  />
+                </div>
+              )}
 
               
               <div className="flex gap-4 pt-6 border-t border-slate-100">
