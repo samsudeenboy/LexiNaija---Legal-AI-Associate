@@ -1,12 +1,19 @@
 import React, { useState } from 'react';
-import { 
-    Archive, Plus, Trash2, FileText, Image as ImageIcon, MessageSquare, Box, FileCheck, 
-    ExternalLink, Printer, Shield, X, History, Clipboard, Bookmark, ChevronRight, Laptop
+import {
+    Archive, Plus, Trash2, FileText, Image as ImageIcon, MessageSquare, Box, FileCheck,
+    ExternalLink, Printer, Shield, X, History, Clipboard, Bookmark, ChevronRight, Laptop,
+    Download, CheckCircle
 } from 'lucide-react';
 import { useLegalStore } from '../contexts/LegalStoreContext';
 import { EvidenceItem } from '../types';
 import { useToast } from '../contexts/ToastContext';
 import { ConfirmModal } from './ConfirmModal';
+import { 
+    generateS84Certificate, 
+    getDeviceFingerprint, 
+    generateIntegrityHash,
+    downloadS84Certificate 
+} from '../services/s84Generator';
 
 export const Evidence: React.FC = () => {
   const { showToast } = useToast();
@@ -62,58 +69,50 @@ export const Evidence: React.FC = () => {
     }
   };
 
-  const generateS84Certificate = (item: EvidenceItem) => {
+  const handleGenerateS84Certificate = async (item: EvidenceItem) => {
       if (!selectedCase) return;
       const client = clients.find(c => c.id === selectedCase.clientId);
       
-      const content = `IN THE ${selectedCase.court?.toUpperCase() || 'HIGH COURT OF LAGOS STATE'}
-IN THE ${selectedCase.court?.split(',')[1]?.trim().toUpperCase() || 'LAGOS'} JUDICIAL DIVISION
-HOLDEN AT ${selectedCase.court?.split(',')[1]?.trim().toUpperCase() || 'LAGOS'}
-
-SUIT NO: ${selectedCase.suitNumber || '....................'}
-
-BETWEEN:
-
-${client?.name.toUpperCase() || 'CLAIMANT'} ........................................ CLAIMANT
-
-AND
-
-${selectedCase.opposingParty?.toUpperCase() || 'DEFENDANT'} ........................................ DEFENDANT
-
-CERTIFICATE OF COMPLIANCE
-(Pursuant to Section 84 of the Evidence Act, 2011)
-
-I, ${firmProfile.solicitorName}, Adult, Christian/Muslim, Nigerian Citizen, of ${firmProfile.address}, do hereby certify as follows:
-
-1. That I am the solicitor to the Claimant/Defendant in this suit and by virtue of my position, I am conversant with the facts deposed to herein.
-
-2. That the document described as "${item.description}" was produced by a computer/electronic device during a period over which the computer was used regularly to store or process information for the purposes of the activities regularly carried on over that period.
-
-3. That over that period, there was regularly supplied to the computer in the ordinary course of those activities information of the kind contained in the statement or of the kind from which the information so contained is derived.
-
-4. That throughout the material part of that period, the computer was operating properly or, if not, that any respect in which it was not operating properly or was out of operation during that part of that period was not such as to affect the production of the document or the accuracy of its contents.
-
-5. That the information contained in the statement reproduces or is derived from information supplied to the computer in the ordinary course of those activities.
-
-6. That the computer used is a standard device [Insert Device Details if known] operating on standard software without manipulation.
-
-DATED THIS ...... DAY OF ...... 20....
-
-__________________________
-${firmProfile.solicitorName}
-Counsel to the Claimant/Defendant
-${firmProfile.name}
-`;
-
-      saveDocumentToCase(selectedCase.id, {
+      try {
+        // Generate device fingerprint
+        const deviceDetails = getDeviceFingerprint();
+        
+        // Generate integrity hash
+        const integrityHash = await generateIntegrityHash({
+          description: item.description,
+          dateObtained: item.dateObtained,
+          type: item.type,
+          custodyLocation: item.custodyLocation || 'Unknown',
+          caseNumber: selectedCase.suitNumber
+        });
+        
+        // Generate certificate content
+        const content = generateS84Certificate(
+          item,
+          selectedCase,
+          client,
+          firmProfile,
+          deviceDetails,
+          integrityHash
+        );
+        
+        // Save to case documents
+        saveDocumentToCase(selectedCase.id, {
           id: Date.now().toString(),
-          title: `S.84 Certificate - ${item.description.substring(0, 20)}`,
+          title: `S.84 Certificate - ${item.description.substring(0, 30)}`,
           content: content,
           type: 'Draft',
           createdAt: new Date()
-      } as any);
-      
-      showToast("S.84 Certificate generated and archived.", "success");
+        });
+        
+        // Download for convenience
+        downloadS84Certificate(content, selectedCase.title, item.description);
+        
+        showToast("S.84 Certificate generated with integrity hash. Downloading...", "success");
+      } catch (error) {
+        console.error('S.84 Generation Error:', error);
+        showToast("Failed to generate S.84 Certificate. Please try again.", "error");
+      }
   };
 
   const generateListofDocuments = () => {
@@ -315,19 +314,39 @@ C/O THEIR COUNSEL
                                     <td className="px-8 py-6 text-right">
                                         <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-2 group-hover:translate-x-0">
                                             {item.requiresS84Certificate && (
-                                                <button 
-                                                    onClick={() => generateS84Certificate(item)}
-                                                    className="p-3 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
-                                                    title="Generate S.84 Certificate"
+                                                <button
+                                                    onClick={() => handleGenerateS84Certificate(item)}
+                                                    className="p-3 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all flex items-center gap-2"
+                                                    title="Generate S.84 Certificate with Integrity Hash"
                                                 >
                                                     <Shield size={18} />
+                                                    <span className="text-[9px] font-black uppercase tracking-widest">Generate S.84</span>
                                                 </button>
                                             )}
-                                            <button 
+                                            <button
                                                 onClick={() => handleDeleteRequest(item.id)}
                                                 className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                                                title="Delete Evidence"
                                             >
                                                 <Trash2 size={18} />
+                                            </button>
+                                            <button
+                                                onClick={() => downloadS84Certificate(
+                                                    generateS84Certificate(
+                                                        item,
+                                                        selectedCase!,
+                                                        clients.find(c => c.id === selectedCase!.clientId),
+                                                        firmProfile,
+                                                        getDeviceFingerprint(),
+                                                        'preview'
+                                                    ),
+                                                    selectedCase!.title,
+                                                    item.description
+                                                )}
+                                                className="p-3 text-slate-300 hover:text-legal-gold hover:bg-legal-50 rounded-xl transition-all"
+                                                title="Download Certificate"
+                                            >
+                                                <Download size={18} />
                                             </button>
                                         </div>
                                     </td>

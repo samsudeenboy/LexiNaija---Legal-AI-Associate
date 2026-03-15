@@ -1,6 +1,7 @@
-import { FileText, Clock, AlertCircle, Briefcase, Zap, Gavel } from 'lucide-react';
+import { FileText, Clock, AlertCircle, Briefcase, Zap, Gavel, Calendar, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useLegalStore } from '../contexts/LegalStoreContext';
 import { CounselAgent } from './CounselAgent';
+import { getCasesApproachingLimitation, getLimitationUrgency } from '../services/limitationCalculator';
 
 interface DashboardProps {
   onNavigate: (view: any) => void;
@@ -12,6 +13,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const totalDocuments = cases.reduce((acc, c) => acc + c.documents.length, 0);
   const activeCases = cases.filter(c => c.status === 'Open' || c.status === 'Pending Court' || c.status === 'Drafting').length;
   const activeCase = cases.find(c => c.id === activeCaseId);
+  
+  // Get cases approaching limitation
+  const limitationCases = getCasesApproachingLimitation(cases, 90);
+  const criticalCases = limitationCases.filter(c => c.urgency.level === 'critical');
+  const warningCases = limitationCases.filter(c => c.urgency.level === 'warning' || c.urgency.level === 'attention');
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-10 animate-in fade-in duration-1000">
@@ -46,23 +52,76 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {/* Statute Barred Alert Widget */}
-        {cases.some(c => c.limitationDate && new Date(c.limitationDate) < new Date(new Date().setDate(new Date().getDate() + 90))) && (
-            <div className="bg-rose-50 p-6 rounded-[24px] shadow-sm border border-rose-100 md:col-span-3 flex items-center justify-between animate-pulse">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center text-rose-600 shrink-0">
-                        <AlertCircle size={24} />
+        {/* Statute of Limitations Kill-Switch Widget */}
+        {limitationCases.length > 0 && (
+            <div className="md:col-span-3 space-y-4">
+                {criticalCases.length > 0 && (
+                    <div className="bg-rose-50 p-6 rounded-[24px] shadow-sm border-2 border-rose-200 animate-pulse">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-center gap-4 flex-1">
+                                <div className="w-14 h-14 bg-rose-100 rounded-2xl flex items-center justify-center text-rose-600 shrink-0">
+                                    <AlertTriangle size={28} />
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <h3 className="text-rose-900 font-black text-xl font-serif italic tracking-tight">CRITICAL: Statute of Limitations Alert</h3>
+                                        <span className="bg-rose-600 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full animate-pulse">
+                                            {criticalCases.length} Critical
+                                        </span>
+                                    </div>
+                                    <p className="text-rose-700 text-sm font-medium mb-3">
+                                        These matters will become statute-barred within 30 days. Immediate filing action required.
+                                    </p>
+                                    <div className="space-y-2">
+                                        {criticalCases.slice(0, 3).map(c => (
+                                            <div key={c.id} className="bg-white rounded-xl p-3 flex items-center justify-between">
+                                                <div>
+                                                    <p className="font-bold text-rose-900 text-sm">{c.title}</p>
+                                                    <p className="text-xs text-rose-600 font-black">
+                                                        {c.urgency.message}
+                                                    </p>
+                                                </div>
+                                                <button 
+                                                    onClick={() => { setActiveCaseId(c.id); onNavigate('CASES'); }}
+                                                    className="bg-rose-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-colors"
+                                                >
+                                                    Review Now
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => onNavigate('CASES')}
+                                className="bg-rose-600 text-white px-6 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-colors shadow-lg shadow-rose-600/20 shrink-0"
+                            >
+                                View All<br/>Critical
+                            </button>
+                        </div>
                     </div>
-                    <div>
-                        <h3 className="text-rose-900 font-black text-lg font-serif italic tracking-tight">Statute of Limitations Warning</h3>
-                        <p className="text-rose-700 text-xs font-medium">
-                            {cases.filter(c => c.limitationDate && new Date(c.limitationDate) < new Date(new Date().setDate(new Date().getDate() + 90))).length} matter(s) approaching statute bar within 90 days. Immediate action required.
-                        </p>
+                )}
+                
+                {warningCases.length > 0 && criticalCases.length === 0 && (
+                    <div className="bg-amber-50 p-6 rounded-[24px] shadow-sm border border-amber-200">
+                        <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-4 flex-1">
+                                <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
+                                    <AlertCircle size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-amber-900 font-black text-lg font-serif italic tracking-tight">Limitation Warning</h3>
+                                    <p className="text-amber-700 text-xs font-medium">
+                                        {warningCases.length} matter(s) approaching limitation within 90 days. Begin preparation.
+                                    </p>
+                                </div>
+                            </div>
+                            <button onClick={() => onNavigate('CASES')} className="bg-amber-600 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-700 transition-colors">
+                                Review Docket
+                            </button>
+                        </div>
                     </div>
-                </div>
-                <button onClick={() => onNavigate('CASES')} className="bg-rose-600 text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-700 transition-colors shadow-lg shadow-rose-600/20">
-                    Review Docket
-                </button>
+                )}
             </div>
         )}
 

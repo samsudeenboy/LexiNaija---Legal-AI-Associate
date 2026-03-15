@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
-import { CreditCard, FileText, Send, Sparkles, Download, X } from 'lucide-react';
+import { CreditCard, FileText, Send, Sparkles, Download, X, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useLegalStore } from '../contexts/LegalStoreContext';
 import { generateFeeNoteDescription } from '../services/geminiService';
 import { jsPDF } from 'jspdf';
 import { Invoice } from '../types';
 import { useToast } from '../contexts/ToastContext';
+import { calculateLPROFee, formatCurrency, getLPROReference, type TransactionType } from '../services/lproCalculator';
 
 export const Billing: React.FC = () => {
   const { showToast } = useToast();
   const { clients, cases, invoices, addInvoice, firmProfile, consumeCredits } = useLegalStore();
   const [drafting, setDrafting] = useState(false);
   const [loadingAi, setLoadingAi] = useState(false);
-  
+
   const [newInvoice, setNewInvoice] = useState({
     clientId: '',
     caseId: '',
@@ -21,20 +22,31 @@ export const Billing: React.FC = () => {
   });
 
   const [showLproCalc, setShowLproCalc] = useState(false);
-  const [lproInput, setLproInput] = useState({ value: '', scale: '10' });
-  const [lproResult, setLproResult] = useState<number | null>(null);
+  const [lproInput, setLproInput] = useState({
+    propertyValue: '',
+    transactionType: 'Sale' as TransactionType,
+    isCommercial: false
+  });
+  const [lproResult, setLproResult] = useState<ReturnType<typeof calculateLPROFee> | null>(null);
 
   const calculateLpro = () => {
-      const val = parseFloat(lproInput.value);
-      if (val) {
-          const fee = val * (parseFloat(lproInput.scale) / 100);
-          setLproResult(fee);
+      const value = parseFloat(lproInput.propertyValue);
+      if (!value) {
+        showToast("Enter property value", "error");
+        return;
       }
+      
+      const result = calculateLPROFee({
+        transactionType: lproInput.transactionType,
+        propertyValue: value,
+        isCommercial: lproInput.isCommercial
+      });
+      setLproResult(result);
   };
 
   const applyLpro = () => {
       if (lproResult) {
-          setNewInvoice(prev => ({ ...prev, amount: lproResult.toString() }));
+          setNewInvoice(prev => ({ ...prev, amount: lproResult.professionalFee.toString() }));
           setShowLproCalc(false);
           showToast("LPRO Statutory Fee applied.", "success");
       }
@@ -297,50 +309,93 @@ export const Billing: React.FC = () => {
               {showLproCalc && (
                   <div className="bg-slate-900 p-6 rounded-3xl border border-legal-800 animate-in zoom-in-95">
                       <div className="flex justify-between items-center mb-6">
-                        <h4 className="text-legal-gold font-serif font-black italic text-lg tracking-tight">LPRO 2023 Statutory Calculator</h4>
+                        <h4 className="text-legal-gold font-serif font-black italic text-lg tracking-tight flex items-center gap-2">
+                          <CheckCircle size={18} /> LPRO 2023 Statutory Calculator
+                        </h4>
                         <button onClick={() => setShowLproCalc(false)} className="text-white/40 hover:text-white"><X size={18}/></button>
                       </div>
+                      
                       <div className="grid grid-cols-2 gap-4 mb-6">
-                          <div>
-                              <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Transaction Value (₦)</label>
-                              <input 
-                                type="number" 
-                                value={lproInput.value}
-                                onChange={e => setLproInput({...lproInput, value: e.target.value})}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white font-mono focus:border-legal-gold outline-none"
-                                placeholder="Value..."
-                              />
-                          </div>
-                          <div>
-                              <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Scale Type</label>
-                              <select 
-                                value={lproInput.scale}
-                                onChange={e => setLproInput({...lproInput, scale: e.target.value})}
+                          <div className="col-span-2">
+                              <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Transaction Type</label>
+                              <select
+                                value={lproInput.transactionType}
+                                onChange={(e) => setLproInput({...lproInput, transactionType: e.target.value as TransactionType})}
                                 className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white text-xs font-bold outline-none cursor-pointer"
                               >
-                                  <option value="10" className="text-legal-900">Standard Conveyance (10%)</option>
-                                  <option value="15" className="text-legal-900">Private Agreement (15%)</option>
-                                  <option value="7.5" className="text-legal-900">Mortgage/Lease (7.5%)</option>
+                                  <option value="Sale" className="text-legal-900">Sale of Property</option>
+                                  <option value="Lease" className="text-legal-900">Lease Agreement</option>
+                                  <option value="Mortgage" className="text-legal-900">Deed of Mortgage</option>
+                                  <option value="Assignment" className="text-legal-900">Deed of Assignment</option>
                               </select>
                           </div>
+                          <div className="col-span-2">
+                              <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Property/Transaction Value (₦)</label>
+                              <input
+                                type="number"
+                                value={lproInput.propertyValue}
+                                onChange={e => setLproInput({...lproInput, propertyValue: e.target.value})}
+                                className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white font-mono focus:border-legal-gold outline-none"
+                                placeholder="e.g. 100000000"
+                              />
+                          </div>
+                          {(lproInput.transactionType === 'Lease') && (
+                            <div className="col-span-2">
+                                <label className="flex items-center gap-3 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={lproInput.isCommercial}
+                                      onChange={(e) => setLproInput({...lproInput, isCommercial: e.target.checked})}
+                                      className="w-5 h-5 accent-legal-gold"
+                                    />
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Commercial Property (10% vs 7.5% for Residential)</span>
+                                </label>
+                            </div>
+                          )}
                       </div>
-                      <button 
+                      <button
                         onClick={calculateLpro}
-                        className="w-full bg-legal-gold text-legal-900 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest mb-4"
+                        className="w-full bg-legal-gold text-legal-900 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest mb-4 hover:bg-legal-gold/90 transition-all flex items-center justify-center gap-2"
                       >
-                        Calculate Statutory Quantum
+                        <Sparkles size={16} /> Calculate Statutory Fee
                       </button>
-                      {lproResult !== null && (
-                          <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-2xl">
-                              <div>
-                                  <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Statutory Fee</p>
-                                  <p className="text-xl font-black text-white italic tracking-tight">₦{lproResult.toLocaleString()}</p>
+                      {lproResult && (
+                          <div className="space-y-3">
+                              {lproResult.warning && (
+                                <div className="bg-amber-500/20 border border-amber-500/50 rounded-xl p-3 flex items-start gap-2">
+                                  <AlertTriangle size={16} className="text-amber-400 shrink-0 mt-0.5" />
+                                  <p className="text-[9px] font-black text-amber-200">{lproResult.warning}</p>
+                                </div>
+                              )}
+                              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
+                                  <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Fee Breakdown (LPRO 2023)</h5>
+                                  {lproResult.breakdown.map((item, idx) => (
+                                    <p key={idx} className="text-xs text-slate-300">{item}</p>
+                                  ))}
+                                  <div className="border-t border-white/10 pt-3 mt-3 space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-slate-400">Professional Fee:</span>
+                                      <span className="text-white font-bold">{formatCurrency(lproResult.professionalFee)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-slate-400">VAT @ 7.5%:</span>
+                                      <span className="text-white font-bold">{formatCurrency(lproResult.vat)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-slate-400">Stamp Duty (est.):</span>
+                                      <span className="text-white font-bold">{formatCurrency(lproResult.stampDuty)}</span>
+                                    </div>
+                                    <div className="flex justify-between text-lg font-black">
+                                      <span className="text-legal-gold">TOTAL:</span>
+                                      <span className="text-white">{formatCurrency(lproResult.total)}</span>
+                                    </div>
+                                  </div>
                               </div>
-                              <button 
+                              <button
                                 onClick={applyLpro}
-                                className="px-6 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all"
+                                className="w-full bg-emerald-500 text-white py-4 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all flex items-center justify-center gap-2"
                               >
-                                Apply to Invoice
+                                <CheckCircle size={16} /> Apply Statutory Fee to Invoice
                               </button>
                           </div>
                       )}
